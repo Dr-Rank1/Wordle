@@ -1,0 +1,17 @@
+package com.lexiguess.app.data.db
+
+import androidx.room.Database
+import androidx.room.RoomDatabase
+
+@Database(
+    entities = [GameRecord::class],
+    version = 1,
+    exportSchema = false,
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun gameDao(): GameDao
+
+    companion object {
+        const val DATABASE_NAME = "lexiguess_db"
+    }
+}
