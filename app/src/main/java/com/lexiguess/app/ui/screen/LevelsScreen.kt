@@ -210,13 +210,18 @@ private fun LevelNode(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val isBoss = record.levelNumber in listOf(10, 25, 40, 50)
+
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = when {
-            record.completed -> TileCorrect.copy(alpha = 0.15f)
-            isUnlocked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            record.completed -> if (isBoss) Color(0xFFE53935).copy(alpha = 0.18f) else TileCorrect.copy(alpha = 0.15f)
+            isUnlocked -> if (isBoss) Color(0xFFE53935).copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
             else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         },
+        border = if (isBoss && isUnlocked) {
+            androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE53935).copy(alpha = 0.7f))
+        } else null,
         modifier = modifier
             .aspectRatio(0.85f)
             .clickable(enabled = isUnlocked, onClick = onClick),
@@ -227,11 +232,20 @@ private fun LevelNode(
             verticalArrangement = Arrangement.SpaceAround,
         ) {
             if (isUnlocked) {
+                if (isBoss) {
+                    Text(
+                        text = "BOSS",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFE53935),
+                        letterSpacing = 0.5.sp,
+                    )
+                }
                 Text(
                     text = "${record.levelNumber}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (record.completed) TileCorrect else MaterialTheme.colorScheme.onSurface,
+                    color = if (isBoss) Color(0xFFE53935) else if (record.completed) TileCorrect else MaterialTheme.colorScheme.onSurface,
                 )
 
                 // Stars

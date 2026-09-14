@@ -21,11 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lexiguess.app.data.repository.PlayerPreferences
+import com.lexiguess.app.ui.composable.StreakCalendarDialog
 import com.lexiguess.app.ui.theme.TileCorrect
+import com.lexiguess.app.ui.theme.TileMisplaced
 
 @Composable
 fun HomeScreen(
     playerPreferences: PlayerPreferences,
+    currentStreak: Int = 0,
     onStartDaily: () -> Unit,
     onStartRush: () -> Unit,
     onNavigateToLevels: () -> Unit,
@@ -36,15 +39,20 @@ fun HomeScreen(
     onNavigateToChallenge: () -> Unit,
     onNavigateToStats: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToQuests: () -> Unit = {},
+    onNavigateToCosmetics: () -> Unit = {},
+    onNavigateToPassAndPlay: () -> Unit = {},
 ) {
     val xp by playerPreferences.xpFlow.collectAsState(initial = 0)
     val rushHighScore by playerPreferences.rushHighScoreFlow.collectAsState(initial = 0)
+    val streakFreezes by playerPreferences.streakFreezesFlow.collectAsState(initial = 1)
 
     val currentLevel = PlayerPreferences.calculateLevel(xp)
     val rankTitle = PlayerPreferences.rankForLevel(currentLevel)
     val progressInLevel = PlayerPreferences.calculateProgressInLevel(xp)
 
     var showLengthPicker by remember { mutableStateOf(false) }
+    var showStreakCalendar by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -54,7 +62,7 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        // Top Player Profile Card
+        // Top Player Profile Card with Streak & Shield Badges
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -62,7 +70,7 @@ fun HomeScreen(
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -95,6 +103,42 @@ fun HomeScreen(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                         )
+                    }
+                }
+
+                // Streak & Shield interactive pills
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = TileMisplaced.copy(alpha = 0.15f),
+                        modifier = Modifier.clickable { showStreakCalendar = true },
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(Icons.Outlined.Whatshot, contentDescription = null, tint = TileMisplaced, modifier = Modifier.size(16.dp))
+                            Text("$currentStreak Streak", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TileMisplaced)
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        modifier = Modifier.clickable { showStreakCalendar = true },
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(Icons.Outlined.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                            Text("$streakFreezes/2 Shields", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
 
@@ -226,11 +270,39 @@ fun HomeScreen(
             )
         }
 
-        // Row 3: Custom Challenge & Word Lengths
+        // Row 3: The Guild (Quests) & Cosmetics Studio
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            ModeCard(
+                title = "The Guild",
+                subtitle = "Daily Quests & Bounties",
+                icon = Icons.AutoMirrored.Outlined.Assignment,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToQuests,
+            )
+            ModeCard(
+                title = "Cosmetics",
+                subtitle = "Materials & Shaders",
+                icon = Icons.Outlined.Style,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToCosmetics,
+            )
+        }
+
+        // Row 4: Pass & Play Duel & Custom Challenge
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            ModeCard(
+                title = "Local Duel",
+                subtitle = "2-Player Pass & Play",
+                icon = Icons.Outlined.People,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToPassAndPlay,
+            )
             ModeCard(
                 title = "Custom Puzzle",
                 subtitle = "Challenge a friend",
@@ -238,12 +310,26 @@ fun HomeScreen(
                 modifier = Modifier.weight(1f),
                 onClick = onNavigateToChallenge,
             )
+        }
+
+        // Row 5: Practice Lengths
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             ModeCard(
                 title = "Practice Lengths",
                 subtitle = "4, 5, 6, or 7 letters",
                 icon = Icons.Outlined.Tune,
                 modifier = Modifier.weight(1f),
                 onClick = { showLengthPicker = true },
+            )
+            ModeCard(
+                title = "Statistics",
+                subtitle = "Win rates & streaks",
+                icon = Icons.Outlined.BarChart,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToStats,
             )
         }
 
@@ -307,6 +393,16 @@ fun HomeScreen(
                     Text("Cancel")
                 }
             },
+        )
+    }
+
+    // Modal Streak Calendar Dialog
+    if (showStreakCalendar) {
+        StreakCalendarDialog(
+            currentStreak = currentStreak,
+            maxStreak = currentStreak,
+            streakFreezes = streakFreezes,
+            onDismiss = { showStreakCalendar = false },
         )
     }
 }

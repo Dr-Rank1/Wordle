@@ -19,6 +19,8 @@ data class GameState(
     val definition: String? = null,
     val showGameOverSheet: Boolean = false,
     val showAnalysisDialog: Boolean = false,
+    val showScorecardDialog: Boolean = false,
+    val solveDurationMs: Long = 0L,
     val message: String? = null,
     val remainingCandidates: Int = 0,
     val hardMode: Boolean = false,
@@ -32,6 +34,15 @@ data class GameState(
     // Campaign Level state
     val campaignLevel: Int? = null,
     val starsEarned: Int = 0,
+
+    // Boss Fight state
+    val isBossFight: Boolean = false,
+    val bossName: String = "",
+    val bossTitle: String = "",
+    val bossMaxHp: Int = 100,
+    val bossCurrentHp: Int = 100,
+    val bossModifierDescription: String = "",
+    val bossTimeLimitSeconds: Int? = null,
 
     // Pass & Play Duel state
     val isDuelMode: Boolean = false,

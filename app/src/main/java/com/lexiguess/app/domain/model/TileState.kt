@@ -11,5 +11,12 @@ enum class TileState {
     /** Letter is in the word but in the wrong position (yellow). */
     MISPLACED,
     /** Letter is not in the word (grey). */
-    ABSENT,
+    ABSENT;
+
+    fun priority(): Int = when (this) {
+        CORRECT -> 3
+        MISPLACED -> 2
+        ABSENT -> 1
+        FILLED, EMPTY -> 0
+    }
 }

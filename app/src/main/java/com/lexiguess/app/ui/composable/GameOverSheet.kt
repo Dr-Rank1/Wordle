@@ -30,6 +30,7 @@ fun GameOverSheet(
     state: GameState,
     onPlayAgain: () -> Unit,
     onShowAnalysis: () -> Unit = {},
+    onShowScorecard: () -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     if (!state.showGameOverSheet || state.status == GameStatus.IN_PROGRESS) return
@@ -128,15 +129,31 @@ fun GameOverSheet(
                 )
             }
 
-            OutlinedButton(
-                onClick = {
-                    onDismiss()
-                    onShowAnalysis()
-                },
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape = RoundedCornerShape(10.dp),
+            // Action buttons row for post-game insights
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("View Wordle Bot Analysis", fontWeight = FontWeight.Bold)
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onShowScorecard()
+                    },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                ) {
+                    Text("RPG Scorecard", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onShowAnalysis()
+                    },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                ) {
+                    Text("Bot Analysis", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(2.dp))

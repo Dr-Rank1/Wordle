@@ -114,6 +114,19 @@ fun GameScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                // Boss Encounter Live Bar (if active)
+                if (state.isBossFight) {
+                    BossHealthBar(
+                        bossName = state.bossName,
+                        bossTitle = state.bossTitle,
+                        currentHp = state.bossCurrentHp,
+                        maxHp = state.bossMaxHp,
+                        modifierDescription = state.bossModifierDescription,
+                        timeRemainingSeconds = state.bossTimeLimitSeconds,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+
                 // Timed Rush Live Bar (if active)
                 if (state.gameMode == GameMode.TIMED_RUSH && state.isRushActive) {
                     Column(
@@ -217,6 +230,13 @@ fun GameScreen(
                         val steps by viewModel.guessAnalysisSteps.collectAsState()
                         if (steps.isNotEmpty()) {
                             OutlinedButton(
+                                onClick = { viewModel.showScorecard() },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(46.dp),
+                            ) {
+                                Text("Scorecard", fontWeight = FontWeight.Bold)
+                            }
+                            OutlinedButton(
                                 onClick = { viewModel.showAnalysis() },
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.height(46.dp),
@@ -263,11 +283,25 @@ fun GameScreen(
             )
         }
 
+        // RPG Performance Scorecard Dialog
+        if (state.showScorecardDialog) {
+            RpgScorecardDialog(
+                targetWord = state.targetWord,
+                won = state.status == GameStatus.WON,
+                attempts = state.currentRow,
+                maxAttempts = if (state.isBossFight) 4 else 6,
+                solveDurationMs = state.solveDurationMs,
+                steps = steps,
+                onDismiss = { viewModel.dismissScorecard() },
+            )
+        }
+
         // Game Over Bottom Sheet with Word Definition & Play Again
         GameOverSheet(
             state = state,
             onPlayAgain = { viewModel.playAgain() },
             onShowAnalysis = { viewModel.showAnalysis() },
+            onShowScorecard = { viewModel.showScorecard() },
             onDismiss = { viewModel.dismissGameOverSheet() },
         )
     }

@@ -12,10 +12,14 @@ val LocalDarkMode = staticCompositionLocalOf { false }
 /** Composition local so any composable can read the active BoardTheme palette. */
 val LocalBoardTheme = staticCompositionLocalOf { EmeraldTheme }
 
+/** Composition local so any composable can read the active Tile Material. */
+val LocalTileMaterial = staticCompositionLocalOf { "CLASSIC" }
+
 @Composable
 fun LexiGuessTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     boardTheme: BoardTheme = EmeraldTheme,
+    tileMaterial: String = "CLASSIC",
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) {
@@ -45,6 +49,7 @@ fun LexiGuessTheme(
     CompositionLocalProvider(
         LocalDarkMode provides darkTheme,
         LocalBoardTheme provides boardTheme,
+        LocalTileMaterial provides tileMaterial,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

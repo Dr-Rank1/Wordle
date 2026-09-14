@@ -11,6 +11,7 @@ import com.lexiguess.app.data.db.VaultWordRecord
 import com.lexiguess.app.data.repository.DictionaryHelper
 import com.lexiguess.app.data.repository.GameRepository
 import com.lexiguess.app.data.repository.PlayerPreferences
+import com.lexiguess.app.data.repository.QuestRepository
 import com.lexiguess.app.data.repository.WordRepository
 import com.lexiguess.app.domain.GameEngine
 import com.lexiguess.app.domain.model.GameMode
@@ -21,6 +22,7 @@ import com.lexiguess.app.domain.model.TileState
 import com.lexiguess.app.ui.audio.SoundManager
 import com.lexiguess.app.ui.composable.GuessStepAnalysis
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.lexiguess.app.domain.BossRegistry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +42,7 @@ class GameViewModel @Inject constructor(
     private val levelDao: LevelDao,
     private val achievementDao: AchievementDao,
     private val vaultDao: VaultDao,
+    private val questRepository: QuestRepository,
     val soundManager: SoundManager,
     private val engine: GameEngine,
 ) : ViewModel() {
@@ -51,6 +54,7 @@ class GameViewModel @Inject constructor(
     val guessAnalysisSteps: StateFlow<List<GuessStepAnalysis>> = _guessAnalysisSteps.asStateFlow()
 
     private var rushTimerJob: Job? = null
+    private var bossTimerJob: Job? = null
     private var roundStartTimeMs: Long = System.currentTimeMillis()
 
     init {
@@ -127,17 +131,59 @@ class GameViewModel @Inject constructor(
 
     fun startCampaignLevel(levelNumber: Int) {
         cancelRushTimer()
+        cancelBossTimer()
         _guessAnalysisSteps.value = emptyList()
         viewModelScope.launch {
             val level = levelDao.getLevel(levelNumber)
-            val target = level?.targetWord ?: wordRepository.randomWord(5)
-            val length = level?.wordLength ?: 5
+            val boss = BossRegistry.getBossForLevel(levelNumber)
+            val length = boss?.wordLength ?: level?.wordLength ?: 5
+            val target = level?.targetWord ?: wordRepository.randomWord(length)
             roundStartTimeMs = System.currentTimeMillis()
             _state.value = createEmptyGameState(
                 mode = GameMode.LEVEL,
                 length = length,
                 target = target,
-            ).copy(campaignLevel = levelNumber)
+            ).copy(
+                campaignLevel = levelNumber,
+                isBossFight = boss != null,
+                bossName = boss?.name ?: "",
+                bossTitle = boss?.title ?: "",
+                bossMaxHp = boss?.maxHp ?: 100,
+                bossCurrentHp = boss?.maxHp ?: 100,
+                bossModifierDescription = boss?.modifierDescription ?: "",
+                bossTimeLimitSeconds = boss?.timeLimitSeconds,
+                hardMode = boss?.enforceHardMode ?: playerPreferences.hardModeFlow.first(),
+            )
+            if (boss?.timeLimitSeconds != null) {
+                launchBossTimer(boss.timeLimitSeconds)
+            }
+        }
+    }
+
+    private fun cancelBossTimer() {
+        bossTimerJob?.cancel()
+        bossTimerJob = null
+    }
+
+    private fun launchBossTimer(seconds: Int) {
+        cancelBossTimer()
+        bossTimerJob = viewModelScope.launch {
+            var remaining = seconds
+            while (remaining > 0) {
+                delay(1000)
+                remaining--
+                _state.update { it.copy(bossTimeLimitSeconds = remaining) }
+                if (remaining <= 0) {
+                    _state.update {
+                        it.copy(
+                            status = GameStatus.LOST,
+                            message = "Time's up! The boss defeated you.",
+                            showGameOverSheet = true,
+                        )
+                    }
+                    break
+                }
+            }
         }
     }
 
@@ -259,6 +305,20 @@ class GameViewModel @Inject constructor(
             }
         }
 
+        // Boss Battle modifier validation
+        if (s.isBossFight && s.campaignLevel != null) {
+            val boss = BossRegistry.getBossForLevel(s.campaignLevel)
+            if (boss != null) {
+                val bossError = BossRegistry.validateGuessForBoss(s.currentInput, boss)
+                if (bossError != null) {
+                    showMessage(bossError)
+                    soundManager.playError()
+                    triggerShake()
+                    return
+                }
+            }
+        }
+
         submitGuess()
     }
 
@@ -313,6 +373,14 @@ class GameViewModel @Inject constructor(
         _state.update { it.copy(showAnalysisDialog = false) }
     }
 
+    fun showScorecard() {
+        _state.update { it.copy(showScorecardDialog = true) }
+    }
+
+    fun dismissScorecard() {
+        _state.update { it.copy(showScorecardDialog = false) }
+    }
+
     fun dismissMessage() {
         _state.update { it.copy(message = null) }
     }
@@ -338,15 +406,27 @@ class GameViewModel @Inject constructor(
             if (tileState.priority() > current.priority()) newKeyStates[key] = tileState
         }
 
+        val isBoss = s.isBossFight && s.campaignLevel != null
+        val bossConfig = if (isBoss) BossRegistry.getBossForLevel(s.campaignLevel!!) else null
+        val maxGuessesAllowed = bossConfig?.maxGuesses ?: MAX_ROWS
+
         val won = results.all { it == TileState.CORRECT }
         val nextRow = row + 1
-        val lost = !won && nextRow >= MAX_ROWS
+        val lost = !won && nextRow >= maxGuessesAllowed
 
         val newStatus = when {
             won -> GameStatus.WON
             lost -> GameStatus.LOST
             else -> GameStatus.IN_PROGRESS
         }
+
+        val newBossHp = if (isBoss) {
+            if (won) 0
+            else {
+                val hpChunk = s.bossMaxHp / maxGuessesAllowed
+                (s.bossMaxHp - (nextRow * hpChunk)).coerceAtLeast(1)
+            }
+        } else s.bossCurrentHp
 
         // Remaining candidates metric
         val previousEvals = (0..row).map { r ->
@@ -388,7 +468,12 @@ class GameViewModel @Inject constructor(
                 showConfetti = won,
                 remainingCandidates = remaining,
                 message = message,
+                bossCurrentHp = newBossHp,
             )
+        }
+
+        if (newStatus != GameStatus.IN_PROGRESS) {
+            cancelBossTimer()
         }
 
         if (won) {
@@ -397,7 +482,9 @@ class GameViewModel @Inject constructor(
 
         // Handle game completion
         if (newStatus != GameStatus.IN_PROGRESS) {
-            val solveDurationSeconds = (System.currentTimeMillis() - roundStartTimeMs) / 1000
+            val durationMs = System.currentTimeMillis() - roundStartTimeMs
+            val solveDurationSeconds = durationMs / 1000
+            _state.update { it.copy(solveDurationMs = durationMs) }
 
             viewModelScope.launch {
                 // Fetch definition in background
@@ -484,8 +571,26 @@ class GameViewModel @Inject constructor(
                         timesSolved = (existing?.timesSolved ?: 0) + 1,
                         bestGuesses = minOf(existing?.bestGuesses ?: 6, attempts),
                         unlockedAt = existing?.unlockedAt ?: System.currentTimeMillis(),
-                    )
+                    ),
                 )
+            } catch (_: Exception) {}
+
+            // Daily Quests progression
+            try {
+                questRepository.onPuzzleSolved(
+                    wordLength = s.wordLength,
+                    attempts = attempts,
+                    mode = s.gameMode.name,
+                    solveDurationSeconds = durationSeconds,
+                )
+            } catch (_: Exception) {}
+
+            // Streak Freeze milestone award (1 per 7-day streak)
+            try {
+                val currentStreak = gameRepository.currentStreak()
+                if (currentStreak > 0 && currentStreak % 7 == 0) {
+                    playerPreferences.addStreakFreeze(1)
+                }
             } catch (_: Exception) {}
 
             // Campaign level completion
@@ -654,12 +759,6 @@ class GameViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         cancelRushTimer()
+        cancelBossTimer()
     }
-}
-
-private fun TileState.priority(): Int = when (this) {
-    TileState.CORRECT -> 3
-    TileState.MISPLACED -> 2
-    TileState.ABSENT -> 1
-    else -> 0
 }

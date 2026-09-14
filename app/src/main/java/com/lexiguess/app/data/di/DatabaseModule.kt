@@ -6,6 +6,7 @@ import com.lexiguess.app.data.db.AchievementDao
 import com.lexiguess.app.data.db.AppDatabase
 import com.lexiguess.app.data.db.GameDao
 import com.lexiguess.app.data.db.LevelDao
+import com.lexiguess.app.data.db.QuestDao
 import com.lexiguess.app.data.db.VaultDao
 import dagger.Module
 import dagger.Provides
@@ -38,4 +39,7 @@ object DatabaseModule {
 
     @Provides
     fun provideVaultDao(database: AppDatabase): VaultDao = database.vaultDao()
+
+    @Provides
+    fun provideQuestDao(database: AppDatabase): QuestDao = database.questDao()
 }

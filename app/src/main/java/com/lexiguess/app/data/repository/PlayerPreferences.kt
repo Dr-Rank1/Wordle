@@ -25,6 +25,10 @@ class PlayerPreferences @Inject constructor(
     val themeFlow: Flow<String> = dataStore.data.map { it[KEY_THEME] ?: "DARK" }
     val boardThemeFlow: Flow<String> = dataStore.data.map { it[KEY_BOARD_THEME] ?: "EMERALD" }
     val rushHighScoreFlow: Flow<Int> = dataStore.data.map { it[KEY_RUSH_HIGH_SCORE] ?: 0 }
+    val streakFreezesFlow: Flow<Int> = dataStore.data.map { it[KEY_STREAK_FREEZES] ?: 1 }
+    val lastPlayedDateFlow: Flow<String?> = dataStore.data.map { it[KEY_LAST_PLAYED_DATE] }
+    val tileMaterialFlow: Flow<String> = dataStore.data.map { it[KEY_TILE_MATERIAL] ?: "CLASSIC" }
+    val particleEffectFlow: Flow<String> = dataStore.data.map { it[KEY_PARTICLE_EFFECT] ?: "CONFETTI" }
 
     suspend fun addXp(amount: Int) {
         dataStore.edit {
@@ -53,6 +57,37 @@ class PlayerPreferences @Inject constructor(
         dataStore.edit { it[KEY_BOARD_THEME] = themeId }
     }
 
+    suspend fun setTileMaterial(material: String) {
+        dataStore.edit { it[KEY_TILE_MATERIAL] = material }
+    }
+
+    suspend fun setParticleEffect(effect: String) {
+        dataStore.edit { it[KEY_PARTICLE_EFFECT] = effect }
+    }
+
+    suspend fun addStreakFreeze(count: Int = 1) {
+        dataStore.edit {
+            val current = it[KEY_STREAK_FREEZES] ?: 1
+            it[KEY_STREAK_FREEZES] = (current + count).coerceAtMost(2)
+        }
+    }
+
+    suspend fun consumeStreakFreeze(): Boolean {
+        var used = false
+        dataStore.edit {
+            val current = it[KEY_STREAK_FREEZES] ?: 1
+            if (current > 0) {
+                it[KEY_STREAK_FREEZES] = current - 1
+                used = true
+            }
+        }
+        return used
+    }
+
+    suspend fun updateLastPlayedDate(dateKey: String) {
+        dataStore.edit { it[KEY_LAST_PLAYED_DATE] = dateKey }
+    }
+
     suspend fun updateRushHighScore(score: Int) {
         dataStore.edit {
             val current = it[KEY_RUSH_HIGH_SCORE] ?: 0
@@ -68,6 +103,10 @@ class PlayerPreferences @Inject constructor(
         private val KEY_THEME = stringPreferencesKey("pref_theme")
         private val KEY_BOARD_THEME = stringPreferencesKey("pref_board_theme")
         private val KEY_RUSH_HIGH_SCORE = intPreferencesKey("rush_high_score")
+        private val KEY_STREAK_FREEZES = intPreferencesKey("pref_streak_freezes")
+        private val KEY_LAST_PLAYED_DATE = stringPreferencesKey("pref_last_played_date")
+        private val KEY_TILE_MATERIAL = stringPreferencesKey("pref_tile_material")
+        private val KEY_PARTICLE_EFFECT = stringPreferencesKey("pref_particle_effect")
 
         fun calculateLevel(xp: Int): Int = (xp / 400) + 1
         fun calculateProgressInLevel(xp: Int): Float = (xp % 400).toFloat() / 400f

@@ -9,8 +9,9 @@ import androidx.room.RoomDatabase
         LevelRecord::class,
         AchievementRecord::class,
         VaultWordRecord::class,
+        QuestRecord::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -18,6 +19,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun levelDao(): LevelDao
     abstract fun achievementDao(): AchievementDao
     abstract fun vaultDao(): VaultDao
+    abstract fun questDao(): QuestDao
 
     companion object {
         const val DATABASE_NAME = "lexiguess_db"

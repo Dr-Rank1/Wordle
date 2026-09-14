@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -149,9 +150,14 @@ private fun TileCell(
     val popScale = remember { Animatable(1f) }
     LaunchedEffect(letter) {
         if (letter != ' ' && !isSubmitted) {
-            popScale.snapTo(1f)
-            popScale.animateTo(1.15f, tween(60, easing = LinearOutSlowInEasing))
-            popScale.animateTo(1.0f, tween(75, easing = FastOutSlowInEasing))
+            popScale.snapTo(0.88f)
+            popScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow,
+                ),
+            )
         }
     }
 
@@ -165,6 +171,15 @@ private fun TileCell(
     }
 
     val isBackSide = flipProgress.value >= 0.5f
+
+    val bloomAlpha = remember { Animatable(0f) }
+    LaunchedEffect(isBackSide, tileState) {
+        if (isBackSide && tileState == TileState.CORRECT) {
+            delay(80)
+            bloomAlpha.animateTo(0.9f, tween(140, easing = LinearOutSlowInEasing))
+            bloomAlpha.animateTo(0.2f, tween(350, easing = FastOutSlowInEasing))
+        }
+    }
 
     val rotationXDegrees = if (!isBackSide) {
         flipProgress.value * 180f
@@ -184,10 +199,27 @@ private fun TileCell(
         tileState.toTextColor(darkMode)
     }
 
-    val borderColor = if (isBackSide) {
-        Color.Transparent
-    } else {
-        tileState.toBorder(darkMode)
+    val material = LocalTileMaterial.current
+    val cornerShape = when (material) {
+        "GLASS" -> androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+        "CARBON" -> androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
+        "GOLDEN" -> androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+        "OBSIDIAN" -> androidx.compose.foundation.shape.RoundedCornerShape(5.dp)
+        else -> androidx.compose.foundation.shape.RoundedCornerShape(2.dp)
+    }
+
+    val finalBorderColor = when {
+        isBackSide && tileState == TileState.CORRECT && bloomAlpha.value > 0.05f -> {
+            Color.White.copy(alpha = bloomAlpha.value)
+        }
+        isBackSide && material == "GOLDEN" -> {
+            Color(0xFFFFD700).copy(alpha = 0.6f)
+        }
+        isBackSide && material == "CARBON" -> {
+            Color(0xFF455A64).copy(alpha = 0.5f)
+        }
+        isBackSide -> Color.Transparent
+        else -> tileState.toBorder(darkMode)
     }
 
     Box(
@@ -198,11 +230,16 @@ private fun TileCell(
                 cameraDistance = 14f * density
                 scaleX = popScale.value
                 scaleY = popScale.value
+                if (isBackSide && tileState == TileState.CORRECT && bloomAlpha.value > 0.3f) {
+                    shadowElevation = 8f * bloomAlpha.value
+                }
             }
+            .clip(cornerShape)
             .background(bgColor)
             .border(
-                width = 2.dp,
-                color = borderColor,
+                width = if (isBackSide && (tileState == TileState.CORRECT || material == "GOLDEN")) 2.5.dp else 2.dp,
+                color = finalBorderColor,
+                shape = cornerShape,
             ),
         contentAlignment = Alignment.Center,
     ) {

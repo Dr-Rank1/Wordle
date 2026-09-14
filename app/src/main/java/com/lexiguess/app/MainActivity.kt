@@ -41,6 +41,9 @@ class MainActivity : ComponentActivity() {
     lateinit var multiBoardEngine: MultiBoardEngine
 
     @Inject
+    lateinit var gameRepository: com.lexiguess.app.data.repository.GameRepository
+
+    @Inject
     lateinit var soundManager: SoundManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,11 +51,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             var darkMode by rememberSaveable { mutableStateOf(false) }
             val currentBoardThemeId by playerPreferences.boardThemeFlow.collectAsState(initial = "EMERALD")
+            val currentTileMaterial by playerPreferences.tileMaterialFlow.collectAsState(initial = "CLASSIC")
             val activeTheme = ALL_BOARD_THEMES.find { it.id == currentBoardThemeId } ?: EmeraldTheme
 
-            LexiGuessTheme(darkTheme = darkMode, boardTheme = activeTheme) {
+            LexiGuessTheme(darkTheme = darkMode, boardTheme = activeTheme, tileMaterial = currentTileMaterial) {
                 LexiGuessNavGraph(
                     playerPreferences = playerPreferences,
+                    gameRepository = gameRepository,
                     levelDao = levelDao,
                     achievementDao = achievementDao,
                     vaultDao = vaultDao,

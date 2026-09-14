@@ -108,6 +108,8 @@ class GameRepository @Inject constructor(
 
     suspend fun currentStreak(): Int = gameDao.currentStreak()
 
+    val currentStreakFlow: Flow<Int> = gameDao.getAllGames().map { gameDao.currentStreak() }
+
     suspend fun bestStreak(): Int = gameDao.bestStreak()
 
     suspend fun guessDistribution(): Map<Int, Int> =

@@ -35,6 +35,9 @@ object Routes {
     const val VAULT = "vault"
     const val MULTI_BOARD = "multi_board"
     const val CHALLENGE = "challenge"
+    const val QUESTS = "quests"
+    const val COSMETICS = "cosmetics"
+    const val PASS_AND_PLAY = "pass_and_play"
 }
 
 data class NavItem(
@@ -55,6 +58,7 @@ private val NAV_ITEMS = listOf(
 @Composable
 fun LexiGuessNavGraph(
     playerPreferences: PlayerPreferences,
+    gameRepository: com.lexiguess.app.data.repository.GameRepository,
     levelDao: LevelDao,
     achievementDao: AchievementDao,
     vaultDao: VaultDao,
@@ -66,6 +70,8 @@ fun LexiGuessNavGraph(
 ) {
     val navController = rememberNavController()
     val gameViewModel: GameViewModel = hiltViewModel()
+
+    val currentStreak by gameRepository.currentStreakFlow.collectAsState(initial = 0)
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -130,6 +136,7 @@ fun LexiGuessNavGraph(
             composable(Routes.HOME) {
                 HomeScreen(
                     playerPreferences = playerPreferences,
+                    currentStreak = currentStreak,
                     onStartDaily = {
                         gameViewModel.startDailyGame()
                         navController.navigate(Routes.GAME)
@@ -146,8 +153,7 @@ fun LexiGuessNavGraph(
                         navController.navigate(Routes.GAME)
                     },
                     onStartDuel = {
-                        gameViewModel.startPracticeGame(5)
-                        navController.navigate(Routes.GAME)
+                        navController.navigate(Routes.PASS_AND_PLAY)
                     },
                     onNavigateToMultiBoard = {
                         navController.navigate(Routes.MULTI_BOARD)
@@ -163,6 +169,15 @@ fun LexiGuessNavGraph(
                     },
                     onNavigateToSettings = {
                         navController.navigate(Routes.SETTINGS)
+                    },
+                    onNavigateToQuests = {
+                        navController.navigate(Routes.QUESTS)
+                    },
+                    onNavigateToCosmetics = {
+                        navController.navigate(Routes.COSMETICS)
+                    },
+                    onNavigateToPassAndPlay = {
+                        navController.navigate(Routes.PASS_AND_PLAY)
                     },
                 )
             }
@@ -220,6 +235,28 @@ fun LexiGuessNavGraph(
                         gameViewModel.startCustomChallenge(word, attempts)
                         navController.navigate(Routes.GAME)
                     },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.QUESTS) {
+                QuestsScreen(
+                    viewModel = hiltViewModel(),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.COSMETICS) {
+                CosmeticsScreen(
+                    playerPreferences = playerPreferences,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.PASS_AND_PLAY) {
+                PassAndPlayScreen(
+                    wordRepository = wordRepository,
+                    engine = com.lexiguess.app.domain.GameEngine(),
                     onBack = { navController.popBackStack() },
                 )
             }
