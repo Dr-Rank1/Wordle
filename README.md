@@ -1,84 +1,117 @@
 # LexiGuess
 
-A modern, word-guessing Android game inspired by the original Wordle puzzle.
-Built entirely in Kotlin with Jetpack Compose, LexiGuess challenges players to
-identify a hidden five-letter word within six attempts. The app works fully
-offline and silently refreshes its word pool from a public GitHub Wordle API
-whenever a network connection is available.
+A Wordle-style Android word-guessing game built with Kotlin and Jetpack Compose.
+The app is fully playable offline and silently refreshes its word pool from the
+GitHub Wordle word list whenever a network connection is available.
+
+---
+
+## What is LexiGuess?
+
+LexiGuess presents a new hidden five-letter word every day. The player has six
+attempts to guess it. After each guess, every tile flips to reveal whether its
+letter is in the correct position (green), present somewhere in the word
+(yellow), or absent entirely (grey). The on-screen keyboard mirrors the same
+colour coding so the player can track which letters remain useful.
 
 ---
 
 ## Features
 
-- **Wordle-style gameplay** – six attempts, five letters, instant colour-coded
-  feedback on every guess.
-- **Hybrid word source** – ships with a bundled local word list; fetches fresh
-  words from a public GitHub Wordle API in the background when online.
-- **Hint system** – a single hint per game reveals one correct letter without
-  penalising the player's streak.
-- **Share results** – copy or share a standard Wordle-style emoji grid to any
-  app on the device.
-- **Dark mode** – automatic system-based and manual dark/light toggle baked
-  into Material 3 theming.
-- **Full game history** – every completed game is persisted in a local Room
-  database; browse past results in a dedicated Statistics screen.
-- **Streak tracking** – current streak, best streak, win percentage, and guess
-  distribution chart.
-- **No analytics, no ads** – completely private; no data leaves the device
-  except the single API call to refresh the word list.
+- **Daily word puzzle** — a new target word is chosen each day, derived
+  deterministically from the date so the same word appears on every device.
+- **Hybrid word source** — ships with a curated local word list; automatically
+  fetches the latest list from the GitHub Wordle repository in the background
+  whenever the device is online. Falls back silently to the local list if the
+  network is unavailable.
+- **Tile flip animations** — each submitted row flips its tiles one column at
+  a time to reveal the result, matching the feel of the original game.
+- **Shake animation** — the current row shakes when the player submits a word
+  that is too short or not in the word list.
+- **Hint system** — one hint per game reveals the correct letter for the first
+  unsolved position. The button disables itself once used.
+- **Share results** — generates a standard Wordle-style emoji grid and sends it
+  to the Android share sheet with a single tap.
+- **Dark mode** — a toggle in Settings switches between light and dark themes
+  instantly. The preference is remembered across sessions.
+- **Full game history** — every completed game is stored in a local Room
+  database. A Statistics screen shows total games, win percentage, current
+  streak, best streak, and a guess-distribution bar chart.
+- **Session restore** — if the app is closed mid-game, progress is fully
+  restored on next launch using DataStore.
+- **No ads, no tracking** — no analytics or advertising SDKs. The only network
+  request is the optional word-list refresh from GitHub.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
+| Layer | Library / Tool |
 |---|---|
 | Language | Kotlin 2.0 |
-| UI | Jetpack Compose (Material 3) |
-| Architecture | MVVM + clean layering (UI / Domain / Data) |
-| State | ViewModel + StateFlow |
-| Local persistence | Room (game history) + DataStore Preferences (active game state) |
-| Networking | Retrofit 2 + OkHttp (word list refresh) |
-| Async | Kotlin Coroutines + Flow |
+| UI | Jetpack Compose + Material 3 |
+| Architecture | MVVM, clean layering (UI / Domain / Data) |
+| State management | ViewModel + StateFlow |
 | Dependency injection | Hilt |
-| Testing | JUnit 4, Mockito-Kotlin, Compose UI Test |
+| Local persistence | Room (game history) + DataStore Preferences (active state) |
+| Networking | Retrofit 2 + OkHttp 4 |
+| Async | Kotlin Coroutines + Flow |
+| Navigation | Navigation Compose |
+| Testing | JUnit 4, Kotlin Coroutines Test, Compose UI Test |
+| Build | Gradle Kotlin DSL, AGP 8.5, KSP |
 
 ---
 
 ## Project Structure
 
 ```
-app/
-  src/
-    main/
-      java/com/lexiguess/
-        data/
-          db/          Room database, DAO, entities
-          network/     Retrofit service and DTOs
-          repository/  WordRepository (hybrid: local + remote)
-        domain/
-          GameEngine.kt   Pure-Kotlin guess evaluation logic
-          model/          GameState, GuessResult, TileState
-        ui/
-          screen/
-            GameScreen.kt
-            StatsScreen.kt
-          composable/
-            Grid.kt
-            Keyboard.kt
-            HintButton.kt
-            ShareButton.kt
-          theme/
-            Theme.kt
-            Color.kt
-            Type.kt
-          viewmodel/
-            GameViewModel.kt
-        MainActivity.kt
-      assets/
-        words.txt          Bundled offline word list
-    test/                  Unit tests (GameEngine, Repository)
-    androidTest/           Compose UI tests
+app/src/main/java/com/lexiguess/app/
+  domain/
+    GameEngine.kt              Pure-Kotlin evaluation engine (no Android deps)
+    model/
+      TileState.kt             Enum: EMPTY, FILLED, CORRECT, MISPLACED, ABSENT
+      GameStatus.kt            Enum: IN_PROGRESS, WON, LOST
+      GameState.kt             Immutable UI snapshot
+  data/
+    db/
+      GameRecord.kt            Room entity
+      GameDao.kt               DAO: history, streaks, distribution queries
+      AppDatabase.kt           Room database
+    network/
+      WordApiService.kt        Retrofit interface (GitHub raw content API)
+      NetworkModule.kt         Hilt module: OkHttp + Retrofit
+    repository/
+      WordRepository.kt        Hybrid word source (local asset + remote API)
+      GameRepository.kt        DataStore (active state) + Room (history)
+    di/
+      DatabaseModule.kt        Hilt module: Room + DAO
+      EngineModule.kt          Hilt module: GameEngine singleton
+  ui/
+    theme/
+      Color.kt                 Wordle palette (light + dark)
+      Type.kt                  Typography
+      Theme.kt                 Material 3 theme with LocalDarkMode
+    composable/
+      TileGrid.kt              6x5 board with flip + shake animations
+      WordleKeyboard.kt        Colour-coded on-screen keyboard
+      HintButton.kt            Single-use hint button
+      ShareButton.kt           Emoji grid + Android share sheet
+      StatsChart.kt            Horizontal bar chart for guess distribution
+    screen/
+      GameScreen.kt            Main game screen
+      StatsScreen.kt           Statistics and history screen
+      SettingsScreen.kt        Dark mode toggle
+    navigation/
+      NavGraph.kt              Navigation Compose graph
+    viewmodel/
+      GameViewModel.kt         Game logic, input, restore, hint, shake
+      StatsViewModel.kt        Aggregated stats from Room
+  LexiGuessApp.kt              @HiltAndroidApp Application class
+  MainActivity.kt              Entry point with Hilt + Navigation Compose
+app/src/main/assets/
+  words.txt                    Bundled offline word list
+app/src/test/
+  domain/GameEngineTest.kt     Unit tests for the evaluation engine
 ```
 
 ---
@@ -87,9 +120,9 @@ app/
 
 ### Prerequisites
 
-- Android Studio Hedgehog or later
+- Android Studio Hedgehog (2023.1.1) or later
 - JDK 17
-- An Android device or emulator running API 24+
+- Android device or emulator running API 24 or higher
 
 ### Clone and Build
 
@@ -99,21 +132,19 @@ cd Wordle
 ./gradlew assembleDebug
 ```
 
-Install on a connected device:
+Install directly on a connected device or running emulator:
 
 ```bash
 ./gradlew installDebug
 ```
 
-### Run Tests
-
-Unit tests:
+### Run Unit Tests
 
 ```bash
 ./gradlew test
 ```
 
-Compose UI tests (requires running emulator or device):
+### Run Compose UI Tests (requires emulator or device)
 
 ```bash
 ./gradlew connectedAndroidTest
@@ -123,33 +154,52 @@ Compose UI tests (requires running emulator or device):
 
 ## Word Source
 
-LexiGuess uses a two-tier strategy for its word pool:
+LexiGuess uses a two-tier strategy:
 
-1. **Offline (bundled)** – `assets/words.txt` contains a curated list of
-   five-letter English words that is always available without network access.
-2. **Online (GitHub API)** – at launch, if the device is online, the app
-   fetches the latest word list from the public
-   [tabatkins/wordle-list](https://github.com/tabatkins/wordle-list) repository
-   via the GitHub raw content API and merges it with the local list.
+1. **Offline (bundled)** — `app/src/main/assets/words.txt` contains a curated
+   list of five-letter English words that is always available without any
+   network access.
+2. **Online (GitHub API)** — at app launch, if a network connection is
+   present, the app fetches the word list from
+   [tabatkins/wordle-list](https://github.com/tabatkins/wordle-list) via the
+   GitHub raw content API and merges any new words into the live pool.
 
-The target word for each session is chosen from the merged pool. If the network
-call fails, the game falls back gracefully to the bundled list.
+If the network fetch fails for any reason the app continues silently with the
+bundled list. The target word for the day is always derived deterministically
+from the merged pool.
+
+---
+
+## How Evaluation Works
+
+Each guess is evaluated in two passes against the target word:
+
+1. **Correct positions** — every letter that matches the target at the same
+   index is marked green and that position in the target is consumed.
+2. **Misplaced letters** — for each remaining guess letter, if it exists
+   anywhere in the remaining (unconsumed) target letters it is marked yellow
+   and that occurrence is consumed.
+3. Everything else is marked grey.
+
+This mirrors the official Wordle rules and handles duplicate letters correctly.
 
 ---
 
 ## Roadmap
 
-- Hard mode (guesses must use revealed hints)
-- Infinite mode (play unlimited rounds in one session)
-- Multiple languages
-- Accessibility improvements (screen-reader support, high-contrast palette)
+- Hard mode (every subsequent guess must use all revealed hints)
+- Infinite mode (unlimited rounds in a single session)
+- Additional languages
+- Improved accessibility (screen-reader labels, high-contrast mode)
+- Widget showing today's progress on the home screen
 
 ---
 
 ## Contributing
 
-Pull requests are welcome. For significant changes please open an issue first
-to discuss the proposed approach. Make sure all tests pass before submitting.
+Pull requests are welcome. For significant changes, open an issue first to
+discuss the proposed approach. Make sure all existing tests pass before
+submitting.
 
 ---
 
