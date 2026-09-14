@@ -19,6 +19,7 @@ import com.lexiguess.app.data.db.LevelDao
 import com.lexiguess.app.data.repository.PlayerPreferences
 import com.lexiguess.app.data.db.VaultDao
 import com.lexiguess.app.data.repository.WordRepository
+import com.lexiguess.app.domain.GameEngine
 import com.lexiguess.app.domain.MultiBoardEngine
 import com.lexiguess.app.ui.audio.SoundManager
 import com.lexiguess.app.ui.screen.*
@@ -64,6 +65,7 @@ fun LexiGuessNavGraph(
     vaultDao: VaultDao,
     wordRepository: WordRepository,
     multiBoardEngine: MultiBoardEngine,
+    gameEngine: GameEngine,
     soundManager: SoundManager,
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
@@ -72,6 +74,10 @@ fun LexiGuessNavGraph(
     val gameViewModel: GameViewModel = hiltViewModel()
 
     val currentStreak by gameRepository.currentStreakFlow.collectAsState(initial = 0)
+    var bestStreak by remember { mutableIntStateOf(0) }
+    LaunchedEffect(currentStreak) {
+        bestStreak = gameRepository.bestStreak()
+    }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -137,6 +143,7 @@ fun LexiGuessNavGraph(
                 HomeScreen(
                     playerPreferences = playerPreferences,
                     currentStreak = currentStreak,
+                    bestStreak = bestStreak,
                     onStartDaily = {
                         gameViewModel.startDailyGame()
                         navController.navigate(Routes.GAME)
@@ -213,6 +220,7 @@ fun LexiGuessNavGraph(
                     wordRepository = wordRepository,
                     soundManager = soundManager,
                     playerPreferences = playerPreferences,
+                    vaultDao = vaultDao,
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -256,7 +264,8 @@ fun LexiGuessNavGraph(
             composable(Routes.PASS_AND_PLAY) {
                 PassAndPlayScreen(
                     wordRepository = wordRepository,
-                    engine = com.lexiguess.app.domain.GameEngine(),
+                    engine = gameEngine,
+                    achievementDao = achievementDao,
                     onBack = { navController.popBackStack() },
                 )
             }

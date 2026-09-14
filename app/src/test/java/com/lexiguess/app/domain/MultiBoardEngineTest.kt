@@ -82,4 +82,21 @@ class MultiBoardEngineTest {
         assertEquals(TileState.CORRECT, cStates!![0])
         assertEquals(TileState.ABSENT, cStates[1])
     }
+
+    @Test
+    fun `submitGuess accepts guesses when valid words set has lowercase strings`() {
+        var state = multiEngine.startNewGame(
+            mode = MultiBoardMode.DORDLE,
+            targetWords = listOf("CRANE", "SLOTH"),
+        )
+
+        "CRANE".forEach { state = multiEngine.onLetterInput(state, it) }
+        // Repository provides lowercase dictionary entries
+        state = multiEngine.submitGuess(state, setOf("crane", "sloth"))
+
+        assertFalse(state.shake)
+        assertNull(state.message)
+        assertEquals(1, state.currentRow)
+        assertTrue(state.boards[0].isSolved)
+    }
 }

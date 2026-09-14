@@ -112,7 +112,7 @@ fun PostGameAnalysisDialog(
                         val lastElim = steps.lastOrNull()?.remainingCandidates ?: 0
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = if (lastElim <= 1) "100%" else "Solved",
+                                text = if (lastElim <= 1) "100%" else "$lastElim Left",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
                                 color = TileMisplaced,

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.lexiguess.app.ui.theme.TileCorrect
 import com.lexiguess.app.ui.theme.TileMisplaced
-import java.util.Calendar
+import java.time.LocalDate
 
 @Composable
 fun StreakCalendarDialog(
@@ -32,7 +32,7 @@ fun StreakCalendarDialog(
     streakFreezes: Int,
     onDismiss: () -> Unit,
 ) {
-    val todayDayOfMonth = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+    val today = remember { LocalDate.now() }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -155,16 +155,17 @@ fun StreakCalendarDialog(
                         letterSpacing = 1.sp,
                     )
 
-                    // 4 rows of 7 days
+                    // 4 rows of 7 days (past 28 days leading up to today)
                     for (week in 0 until 4) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             for (day in 1..7) {
-                                val dayIndex = (week * 7) + day
-                                val isPlayed = dayIndex <= currentStreak || (dayIndex == todayDayOfMonth && currentStreak > 0)
-                                val isToday = dayIndex == todayDayOfMonth
+                                val daysAgo = 27 - ((week * 7) + (day - 1))
+                                val targetDate = today.minusDays(daysAgo.toLong())
+                                val isPlayed = daysAgo < currentStreak
+                                val isToday = daysAgo == 0
 
                                 Box(
                                     modifier = Modifier
@@ -193,7 +194,7 @@ fun StreakCalendarDialog(
                                         )
                                     } else {
                                         Text(
-                                            text = "$dayIndex",
+                                            text = "${targetDate.dayOfMonth}",
                                             fontSize = 11.sp,
                                             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),

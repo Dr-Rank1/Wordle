@@ -33,29 +33,34 @@ fun TileGrid(
     val darkMode = LocalDarkMode.current
     val wordLength = state.wordLength
 
-    // Responsive tile size based on column count
-    val tileSize: Dp = when (wordLength) {
+    val maxRows = state.maxAttempts
+    val verticalSpacing = if (maxRows > 6) 4.dp else 6.dp
+
+    // Responsive tile size based on column count and row count
+    val baseTileSize: Dp = when (wordLength) {
         4 -> 60.dp
         5 -> 54.dp
         6 -> 46.dp
         7 -> 40.dp
         else -> 52.dp
     }
+    val tileSize: Dp = if (maxRows > 6) (baseTileSize * 0.88f) else baseTileSize
 
-    val fontSize = when (wordLength) {
+    val baseFontSize = when (wordLength) {
         4 -> 26.sp
         5 -> 22.sp
         6 -> 19.sp
         7 -> 16.sp
         else -> 22.sp
     }
+    val fontSize = if (maxRows > 6) (baseFontSize.value * 0.9f).sp else baseFontSize
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        for (row in 0 until MAX_ROWS) {
+        for (row in 0 until maxRows) {
             TileRow(
                 row = row,
                 letters = state.boardLetters[row],

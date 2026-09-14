@@ -42,7 +42,7 @@ interface GameDao {
     /** Maximum streak ever achieved. */
     @Query(
         """
-        SELECT MAX(streak) FROM (
+        SELECT COALESCE(MAX(streak), 0) FROM (
             SELECT COUNT(*) as streak
             FROM game_records
             WHERE won = 1

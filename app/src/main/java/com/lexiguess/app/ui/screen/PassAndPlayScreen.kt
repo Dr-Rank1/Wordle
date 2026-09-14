@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lexiguess.app.data.db.AchievementDao
 import com.lexiguess.app.data.repository.WordRepository
 import com.lexiguess.app.domain.GameEngine
 import com.lexiguess.app.domain.model.GameState
@@ -33,6 +34,8 @@ import com.lexiguess.app.ui.composable.TileGrid
 import com.lexiguess.app.ui.composable.WordleKeyboard
 import com.lexiguess.app.ui.theme.TileCorrect
 import com.lexiguess.app.ui.theme.TileMisplaced
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 enum class DuelPhase {
     P1_SET_WORD,
@@ -49,8 +52,10 @@ enum class DuelPhase {
 fun PassAndPlayScreen(
     wordRepository: WordRepository,
     engine: GameEngine,
+    achievementDao: AchievementDao? = null,
     onBack: () -> Unit,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var phase by remember { mutableStateOf(DuelPhase.P1_SET_WORD) }
     var secretWordP1 by remember { mutableStateOf("") }
     var secretWordP2 by remember { mutableStateOf("") }
@@ -141,6 +146,20 @@ fun PassAndPlayScreen(
                 p1Won = won
                 p1TimeSeconds = durationSec
                 phase = DuelPhase.MATCH_OVER
+                achievementDao?.let { dao ->
+                    coroutineScope.launch {
+                        val existing = dao.getAchievement("DUEL_PLAYED")
+                        if (existing != null && !existing.unlocked) {
+                            dao.upsertAchievement(
+                                existing.copy(
+                                    unlocked = true,
+                                    currentProgress = 1,
+                                    unlockedAt = LocalDate.now().toString(),
+                                )
+                            )
+                        }
+                    }
+                }
             }
         }
     }

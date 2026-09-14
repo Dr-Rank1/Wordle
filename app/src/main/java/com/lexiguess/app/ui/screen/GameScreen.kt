@@ -34,6 +34,8 @@ fun GameScreen(
     onNavigateToSettings: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    val particleEffect by viewModel.playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
+    val hapticsEnabled by viewModel.playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
 
     var showDuelDialog by remember { mutableStateOf(false) }
     var duelWordInput by remember { mutableStateOf("") }
@@ -258,6 +260,7 @@ fun GameScreen(
                     onKey = viewModel::onKey,
                     onBackspace = viewModel::onBackspace,
                     onEnter = viewModel::onEnter,
+                    hapticsEnabled = hapticsEnabled,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
@@ -268,6 +271,7 @@ fun GameScreen(
         // Win Confetti Particle Engine
         ConfettiParticleEngine(
             trigger = state.showConfetti,
+            paletteName = particleEffect,
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(10f),
@@ -289,7 +293,7 @@ fun GameScreen(
                 targetWord = state.targetWord,
                 won = state.status == GameStatus.WON,
                 attempts = state.currentRow,
-                maxAttempts = if (state.isBossFight) 4 else 6,
+                maxAttempts = state.maxAttempts,
                 solveDurationMs = state.solveDurationMs,
                 steps = steps,
                 onDismiss = { viewModel.dismissScorecard() },

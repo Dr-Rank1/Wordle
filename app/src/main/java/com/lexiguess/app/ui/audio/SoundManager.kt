@@ -7,6 +7,7 @@ import com.lexiguess.app.domain.model.TileState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -137,14 +138,15 @@ class SoundManager @Inject constructor() {
 
             track.write(pcm, 0, pcm.size)
             track.play()
-            // Release after playback finishes
-            track.setNotificationMarkerPosition(pcm.size)
-            track.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
-                override fun onMarkerReached(t: AudioTrack?) {
-                    t?.release()
-                }
-                override fun onPeriodicNotification(t: AudioTrack?) {}
-            })
+            // Reliably release after playback finishes even on Looper-less coroutine worker threads
+            val playDurationMs = (pcm.size * 1000L) / sampleRate + 80L
+            audioScope.launch {
+                delay(playDurationMs)
+                try {
+                    track.stop()
+                    track.release()
+                } catch (_: Exception) {}
+            }
         } catch (_: Exception) {
             // AudioTrack allocation fallback
         }

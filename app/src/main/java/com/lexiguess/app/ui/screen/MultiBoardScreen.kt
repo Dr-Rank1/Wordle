@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lexiguess.app.data.db.VaultDao
+import com.lexiguess.app.data.db.VaultWordRecord
 import com.lexiguess.app.data.repository.PlayerPreferences
 import com.lexiguess.app.data.repository.WordRepository
 import com.lexiguess.app.domain.MultiBoardEngine
@@ -27,6 +29,7 @@ import com.lexiguess.app.domain.model.*
 import com.lexiguess.app.ui.audio.SoundManager
 import com.lexiguess.app.ui.composable.ConfettiParticleEngine
 import com.lexiguess.app.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,11 +38,14 @@ fun MultiBoardScreen(
     wordRepository: WordRepository,
     soundManager: SoundManager,
     playerPreferences: PlayerPreferences,
+    vaultDao: VaultDao? = null,
     onBack: () -> Unit,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var selectedMode by remember { mutableStateOf(MultiBoardMode.DORDLE) }
     var gameState by remember { mutableStateOf<MultiBoardState?>(null) }
     var soundEnabled by remember { mutableStateOf(true) }
+    val particleEffect by playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
 
     LaunchedEffect(Unit) {
         playerPreferences.soundEnabledFlow.collect { soundEnabled = it }
@@ -237,6 +243,28 @@ fun MultiBoardScreen(
                         val validSet = wordRepository.getValidWordsSet(state.wordLength)
                         val newState = multiBoardEngine.submitGuess(state, validSet)
                         gameState = newState
+                        if (newState.status == GameStatus.WON) {
+                            coroutineScope.launch {
+                                playerPreferences.addXp(if (state.mode == MultiBoardMode.DORDLE) 120 else 250)
+                                vaultDao?.let { dao ->
+                                    newState.boards.forEach { b ->
+                                        val existing = dao.getWord(b.targetWord)
+                                        dao.upsert(
+                                            VaultWordRecord(
+                                                word = b.targetWord,
+                                                length = state.wordLength,
+                                                definition = "Solved in Multi-Board ${state.mode.title}",
+                                                partOfSpeech = "word",
+                                                example = "",
+                                                timesSolved = (existing?.timesSolved ?: 0) + 1,
+                                                bestGuesses = minOf(existing?.bestGuesses ?: 9, b.guesses.size),
+                                                unlockedAt = existing?.unlockedAt ?: System.currentTimeMillis(),
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         if (soundEnabled) {
                             if (newState.status == GameStatus.WON) {
                                 soundManager.playVictory()
@@ -250,7 +278,7 @@ fun MultiBoardScreen(
                 )
             }
 
-            ConfettiParticleEngine(trigger = state.showConfetti)
+            ConfettiParticleEngine(trigger = state.showConfetti, particleEffect = particleEffect)
         }
     }
 }

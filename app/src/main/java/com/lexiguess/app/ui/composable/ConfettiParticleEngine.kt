@@ -26,26 +26,37 @@ private data class ConfettiPiece(
     val swayPhase: Float,
 )
 
-private val CONFETTI_COLORS = listOf(
-    Color(0xFF538D4E), // Green
-    Color(0xFFB59F3B), // Gold
-    Color(0xFF00E5FF), // Cyan
-    Color(0xFFFF007F), // Neon Pink
-    Color(0xFFFFB703), // Amber
-    Color(0xFF8338EC), // Purple
-    Color(0xFF3A86FF), // Blue
-    Color(0xFFFFFFFF), // White
+private val PALETTES = mapOf(
+    "CONFETTI" to listOf(
+        Color(0xFF538D4E), Color(0xFFB59F3B), Color(0xFF00E5FF),
+        Color(0xFFFF007F), Color(0xFFFFB703), Color(0xFF8338EC),
+        Color(0xFF3A86FF), Color(0xFFFFFFFF),
+    ),
+    "STARLIGHT" to listOf(
+        Color(0xFF00E5FF), Color(0xFFE0F7FA), Color(0xFF80DEEA),
+        Color(0xFFFFFFFF), Color(0xFF82B1FF), Color(0xFFB388FF),
+    ),
+    "CYBER_NEON" to listOf(
+        Color(0xFFFF007F), Color(0xFF00E5FF), Color(0xFFD500F9),
+        Color(0xFF76FF03), Color(0xFFFF4081), Color(0xFFFFFFFF),
+    ),
+    "GOLDEN_EMBERS" to listOf(
+        Color(0xFFFFD700), Color(0xFFFFB300), Color(0xFFFF8F00),
+        Color(0xFFFF6F00), Color(0xFFFFE082), Color(0xFFFF3D00),
+    ),
 )
 
 @Composable
 fun ConfettiParticleEngine(
     trigger: Boolean,
+    particleEffect: String = "CONFETTI",
     modifier: Modifier = Modifier,
 ) {
     if (!trigger) return
 
+    val colors = PALETTES[particleEffect] ?: PALETTES["CONFETTI"]!!
     val progress = remember { Animatable(0f) }
-    val pieces = remember {
+    val pieces = remember(particleEffect) {
         List(70) {
             ConfettiPiece(
                 initialX = Random.nextFloat(),
@@ -55,7 +66,7 @@ fun ConfettiParticleEngine(
                 rotationSpeed = (Random.nextFloat() - 0.5f) * 720f,
                 width = 12f + Random.nextFloat() * 10f,
                 height = 6f + Random.nextFloat() * 8f,
-                color = CONFETTI_COLORS[Random.nextInt(CONFETTI_COLORS.size)],
+                color = colors[Random.nextInt(colors.size)],
                 swayPhase = Random.nextFloat() * 6.28f,
             )
         }

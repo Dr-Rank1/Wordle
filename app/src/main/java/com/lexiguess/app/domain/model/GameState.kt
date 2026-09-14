@@ -6,6 +6,7 @@ package com.lexiguess.app.domain.model
 data class GameState(
     val gameMode: GameMode = GameMode.DAILY,
     val wordLength: Int = 5,
+    val maxAttempts: Int = MAX_ROWS,
     val targetWord: String = "",
     val board: List<List<TileState>> = List(MAX_ROWS) { List(5) { TileState.EMPTY } },
     val boardLetters: List<List<Char>> = List(MAX_ROWS) { List(5) { ' ' } },

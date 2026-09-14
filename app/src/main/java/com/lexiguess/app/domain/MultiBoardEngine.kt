@@ -79,7 +79,8 @@ class MultiBoardEngine @Inject constructor(
             return state.copy(shake = true, message = "Word must be ${state.wordLength} letters")
         }
 
-        if (validWords.isNotEmpty() && !validWords.contains(guess)) {
+        val lowerGuess = guess.lowercase()
+        if (validWords.isNotEmpty() && !validWords.contains(guess) && !validWords.contains(lowerGuess)) {
             return state.copy(shake = true, message = "Not in word list")
         }
 

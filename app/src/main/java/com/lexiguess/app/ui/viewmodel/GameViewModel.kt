@@ -38,7 +38,7 @@ import javax.inject.Inject
 class GameViewModel @Inject constructor(
     private val wordRepository: WordRepository,
     private val gameRepository: GameRepository,
-    private val playerPreferences: PlayerPreferences,
+    val playerPreferences: PlayerPreferences,
     private val levelDao: LevelDao,
     private val achievementDao: AchievementDao,
     private val vaultDao: VaultDao,
@@ -122,10 +122,12 @@ class GameViewModel @Inject constructor(
         _guessAnalysisSteps.value = emptyList()
         val clean = word.trim().uppercase()
         roundStartTimeMs = System.currentTimeMillis()
+        val attempts = if (maxAttempts in 3..10) maxAttempts else 6
         _state.value = createEmptyGameState(
             mode = GameMode.PRACTICE,
             length = clean.length,
             target = clean,
+            maxAttempts = attempts,
         )
     }
 
@@ -138,11 +140,13 @@ class GameViewModel @Inject constructor(
             val boss = BossRegistry.getBossForLevel(levelNumber)
             val length = boss?.wordLength ?: level?.wordLength ?: 5
             val target = level?.targetWord ?: wordRepository.randomWord(length)
+            val maxAttempts = boss?.maxGuesses ?: 6
             roundStartTimeMs = System.currentTimeMillis()
             _state.value = createEmptyGameState(
                 mode = GameMode.LEVEL,
                 length = length,
                 target = target,
+                maxAttempts = maxAttempts,
             ).copy(
                 campaignLevel = levelNumber,
                 isBossFight = boss != null,
@@ -407,8 +411,7 @@ class GameViewModel @Inject constructor(
         }
 
         val isBoss = s.isBossFight && s.campaignLevel != null
-        val bossConfig = if (isBoss) BossRegistry.getBossForLevel(s.campaignLevel!!) else null
-        val maxGuessesAllowed = bossConfig?.maxGuesses ?: MAX_ROWS
+        val maxGuessesAllowed = s.maxAttempts
 
         val won = results.all { it == TileState.CORRECT }
         val nextRow = row + 1
@@ -627,10 +630,35 @@ class GameViewModel @Inject constructor(
                     )
                 )
             }
+
+            // Milestone wins and streaks achievements
+            try {
+                val totalWins = gameRepository.totalWins()
+                if (totalWins >= 5) unlockAchievement("WIN_5")
+                if (totalWins >= 25) unlockAchievement("WIN_25")
+
+                val currentStreak = gameRepository.currentStreak()
+                if (currentStreak >= 3) unlockAchievement("STREAK_3")
+                if (currentStreak >= 7) unlockAchievement("STREAK_7")
+                if (currentStreak >= 30) unlockAchievement("STREAK_30")
+            } catch (_: Exception) {}
+        } else {
+            // Daily record on loss
+            if (s.gameMode == GameMode.DAILY) {
+                gameRepository.finalizeGame(
+                    GameRecord(
+                        datePlayed = LocalDate.now().toString(),
+                        targetWord = s.targetWord,
+                        won = false,
+                        attempts = 0,
+                        guesses = buildStoredGuesses(s, s.currentInput),
+                    )
+                )
+            }
         }
     }
 
-    private suspend fun unlockAchievement(id: String) {
+    suspend fun unlockAchievement(id: String) {
         val existing = achievementDao.getAchievement(id) ?: return
         if (!existing.unlocked) {
             achievementDao.upsertAchievement(
@@ -644,13 +672,19 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    private fun createEmptyGameState(mode: GameMode, length: Int, target: String): GameState {
+    private fun createEmptyGameState(
+        mode: GameMode,
+        length: Int,
+        target: String,
+        maxAttempts: Int = MAX_ROWS,
+    ): GameState {
         return GameState(
             gameMode = mode,
             wordLength = length,
+            maxAttempts = maxAttempts,
             targetWord = target,
-            board = List(MAX_ROWS) { List(length) { TileState.EMPTY } },
-            boardLetters = List(MAX_ROWS) { List(length) { ' ' } },
+            board = List(maxAttempts) { List(length) { TileState.EMPTY } },
+            boardLetters = List(maxAttempts) { List(length) { ' ' } },
             keyStates = ('A'..'Z').associateWith { TileState.EMPTY },
         )
     }
@@ -715,7 +749,7 @@ class GameViewModel @Inject constructor(
 
             val won = results.all { it == TileState.CORRECT }
             val nextRow = row + 1
-            val lost = !won && nextRow >= MAX_ROWS
+            val lost = !won && nextRow >= tempState.maxAttempts
             tempState = tempState.copy(
                 board = newBoard,
                 boardLetters = buildBoardLetters(tempState.boardLetters, row, guess, 5),
@@ -725,8 +759,13 @@ class GameViewModel @Inject constructor(
                     won -> GameStatus.WON
                     lost -> GameStatus.LOST
                     else -> GameStatus.IN_PROGRESS
-                },
-            )
+        }
+        if (tempState.status != GameStatus.IN_PROGRESS) {
+            tempState = tempState.copy(showGameOverSheet = true)
+            viewModelScope.launch {
+                val def = wordRepository.fetchDefinition(target)
+                _state.update { it.copy(definition = def) }
+            }
         }
         _state.value = tempState
     }

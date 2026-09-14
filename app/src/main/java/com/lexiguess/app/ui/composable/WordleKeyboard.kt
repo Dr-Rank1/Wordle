@@ -35,6 +35,7 @@ fun WordleKeyboard(
     onKey: (Char) -> Unit,
     onBackspace: () -> Unit,
     onEnter: () -> Unit,
+    hapticsEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val darkMode = LocalDarkMode.current
@@ -58,7 +59,7 @@ fun WordleKeyboard(
                     darkMode = darkMode,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onKey(char)
                     },
                 )
@@ -79,7 +80,7 @@ fun WordleKeyboard(
                     darkMode = darkMode,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onKey(char)
                     },
                 )
@@ -98,7 +99,7 @@ fun WordleKeyboard(
                 darkMode = darkMode,
                 modifier = Modifier.weight(1.5f),
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onEnter()
                 },
             )
@@ -109,7 +110,7 @@ fun WordleKeyboard(
                     darkMode = darkMode,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onKey(char)
                     },
                 )
@@ -118,7 +119,7 @@ fun WordleKeyboard(
                 darkMode = darkMode,
                 modifier = Modifier.weight(1.5f),
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onBackspace()
                 },
             )

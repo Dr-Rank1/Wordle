@@ -104,6 +104,18 @@ class GameEngineTest {
     }
 
     @Test
+    fun `validateHardMode catches insufficient repeated letters`() {
+        // Target has 2 'E's, guess revealed 2 'E's (1 CORRECT, 1 MISPLACED)
+        val prev = listOf(
+            Pair("ENTER", listOf(TileState.CORRECT, TileState.ABSENT, TileState.ABSENT, TileState.MISPLACED, TileState.ABSENT))
+        )
+        // Guess with only 1 'E' violates hard mode
+        val err = engine.validateHardMode("EAGLE", prev)
+        assertNotNull(err)
+        assertTrue(err!!.contains("Guess must contain at least 2 'E's"))
+    }
+
+    @Test
     fun `selectDailyWord returns consistent result for same epoch day`() {
         val w1 = engine.selectDailyWord(1000L)
         val w2 = engine.selectDailyWord(1000L)

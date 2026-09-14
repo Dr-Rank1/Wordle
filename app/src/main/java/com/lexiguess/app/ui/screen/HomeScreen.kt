@@ -29,6 +29,7 @@ import com.lexiguess.app.ui.theme.TileMisplaced
 fun HomeScreen(
     playerPreferences: PlayerPreferences,
     currentStreak: Int = 0,
+    bestStreak: Int = 0,
     onStartDaily: () -> Unit,
     onStartRush: () -> Unit,
     onNavigateToLevels: () -> Unit,
@@ -400,7 +401,7 @@ fun HomeScreen(
     if (showStreakCalendar) {
         StreakCalendarDialog(
             currentStreak = currentStreak,
-            maxStreak = currentStreak,
+            maxStreak = if (bestStreak > 0) bestStreak else currentStreak,
             streakFreezes = streakFreezes,
             onDismiss = { showStreakCalendar = false },
         )

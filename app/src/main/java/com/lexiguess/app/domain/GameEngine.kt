@@ -117,13 +117,18 @@ class GameEngine(
                 }
             }
 
-            // 2. All MISPLACED letters must be present in the new guess
+            // 2. All MISPLACED and revealed letters must be present with matching frequency
+            val requiredCharCounts = mutableMapOf<Char, Int>()
             for (i in states.indices) {
-                if (states[i] == TileState.MISPLACED) {
-                    val requiredChar = prevGuess[i]
-                    if (!g.contains(requiredChar)) {
-                        return "Guess must contain $requiredChar"
-                    }
+                if (states[i] == TileState.CORRECT || states[i] == TileState.MISPLACED) {
+                    val char = prevGuess[i]
+                    requiredCharCounts[char] = (requiredCharCounts[char] ?: 0) + 1
+                }
+            }
+            for ((requiredChar, minCount) in requiredCharCounts) {
+                val inGuessCount = g.count { it == requiredChar }
+                if (inGuessCount < minCount) {
+                    return if (minCount == 1) "Guess must contain $requiredChar" else "Guess must contain at least $minCount '${requiredChar}'s"
                 }
             }
         }

@@ -10,6 +10,7 @@ import com.lexiguess.app.data.db.LevelDao
 import com.lexiguess.app.data.db.VaultDao
 import com.lexiguess.app.data.repository.PlayerPreferences
 import com.lexiguess.app.data.repository.WordRepository
+import com.lexiguess.app.domain.GameEngine
 import com.lexiguess.app.domain.MultiBoardEngine
 import com.lexiguess.app.ui.audio.SoundManager
 import com.lexiguess.app.ui.navigation.LexiGuessNavGraph
@@ -17,6 +18,7 @@ import com.lexiguess.app.ui.theme.ALL_BOARD_THEMES
 import com.lexiguess.app.ui.theme.EmeraldTheme
 import com.lexiguess.app.ui.theme.LexiGuessTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -41,6 +43,9 @@ class MainActivity : ComponentActivity() {
     lateinit var multiBoardEngine: MultiBoardEngine
 
     @Inject
+    lateinit var gameEngine: GameEngine
+
+    @Inject
     lateinit var gameRepository: com.lexiguess.app.data.repository.GameRepository
 
     @Inject
@@ -49,7 +54,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            var darkMode by rememberSaveable { mutableStateOf(false) }
+            val coroutineScope = rememberCoroutineScope()
+            val themePref by playerPreferences.themeFlow.collectAsState(initial = "DARK")
+            val darkMode = themePref == "DARK"
             val currentBoardThemeId by playerPreferences.boardThemeFlow.collectAsState(initial = "EMERALD")
             val currentTileMaterial by playerPreferences.tileMaterialFlow.collectAsState(initial = "CLASSIC")
             val activeTheme = ALL_BOARD_THEMES.find { it.id == currentBoardThemeId } ?: EmeraldTheme
@@ -63,9 +70,14 @@ class MainActivity : ComponentActivity() {
                     vaultDao = vaultDao,
                     wordRepository = wordRepository,
                     multiBoardEngine = multiBoardEngine,
+                    gameEngine = gameEngine,
                     soundManager = soundManager,
                     darkMode = darkMode,
-                    onDarkModeChange = { darkMode = it },
+                    onDarkModeChange = { newDark ->
+                        coroutineScope.launch {
+                            playerPreferences.setTheme(if (newDark) "DARK" else "LIGHT")
+                        }
+                    },
                 )
             }
         }
