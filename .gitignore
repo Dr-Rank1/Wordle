@@ -19,3 +19,8 @@ app/build/
 build_output.txt
 build_full.txt
 checklog.txt
+
+.gradle/
+build/
+app/build/
+local.properties
