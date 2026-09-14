@@ -23,6 +23,7 @@ class PlayerPreferences @Inject constructor(
     val hapticsEnabledFlow: Flow<Boolean> = dataStore.data.map { it[KEY_HAPTICS] ?: true }
     val hardModeFlow: Flow<Boolean> = dataStore.data.map { it[KEY_HARD_MODE] ?: false }
     val themeFlow: Flow<String> = dataStore.data.map { it[KEY_THEME] ?: "DARK" }
+    val boardThemeFlow: Flow<String> = dataStore.data.map { it[KEY_BOARD_THEME] ?: "EMERALD" }
     val rushHighScoreFlow: Flow<Int> = dataStore.data.map { it[KEY_RUSH_HIGH_SCORE] ?: 0 }
 
     suspend fun addXp(amount: Int) {
@@ -48,6 +49,10 @@ class PlayerPreferences @Inject constructor(
         dataStore.edit { it[KEY_THEME] = themeName }
     }
 
+    suspend fun setBoardTheme(themeId: String) {
+        dataStore.edit { it[KEY_BOARD_THEME] = themeId }
+    }
+
     suspend fun updateRushHighScore(score: Int) {
         dataStore.edit {
             val current = it[KEY_RUSH_HIGH_SCORE] ?: 0
@@ -61,6 +66,7 @@ class PlayerPreferences @Inject constructor(
         private val KEY_HAPTICS = booleanPreferencesKey("pref_haptics")
         private val KEY_HARD_MODE = booleanPreferencesKey("pref_hard_mode")
         private val KEY_THEME = stringPreferencesKey("pref_theme")
+        private val KEY_BOARD_THEME = stringPreferencesKey("pref_board_theme")
         private val KEY_RUSH_HIGH_SCORE = intPreferencesKey("rush_high_score")
 
         fun calculateLevel(xp: Int): Int = (xp / 400) + 1

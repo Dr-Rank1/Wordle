@@ -214,6 +214,17 @@ fun GameScreen(
                             )
                         }
 
+                        val steps by viewModel.guessAnalysisSteps.collectAsState()
+                        if (steps.isNotEmpty()) {
+                            OutlinedButton(
+                                onClick = { viewModel.showAnalysis() },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(46.dp),
+                            ) {
+                                Text("Analysis", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
                         ShareButton(
                             state = state,
                             modifier = Modifier.height(46.dp),
@@ -234,18 +245,29 @@ fun GameScreen(
             }
         }
 
-        // Win Confetti
-        ConfettiOverlay(
-            active = state.showConfetti,
+        // Win Confetti Particle Engine
+        ConfettiParticleEngine(
+            trigger = state.showConfetti,
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(10f),
         )
 
+        // Post Game Analysis Dialog
+        val steps by viewModel.guessAnalysisSteps.collectAsState()
+        if (state.showAnalysisDialog) {
+            PostGameAnalysisDialog(
+                targetWord = state.targetWord,
+                steps = steps,
+                onDismiss = { viewModel.dismissAnalysis() },
+            )
+        }
+
         // Game Over Bottom Sheet with Word Definition & Play Again
         GameOverSheet(
             state = state,
             onPlayAgain = { viewModel.playAgain() },
+            onShowAnalysis = { viewModel.showAnalysis() },
             onDismiss = { viewModel.dismissGameOverSheet() },
         )
     }

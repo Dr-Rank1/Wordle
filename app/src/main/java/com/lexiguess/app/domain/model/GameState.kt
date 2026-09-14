@@ -18,6 +18,7 @@ data class GameState(
     val showConfetti: Boolean = false,
     val definition: String? = null,
     val showGameOverSheet: Boolean = false,
+    val showAnalysisDialog: Boolean = false,
     val message: String? = null,
     val remainingCandidates: Int = 0,
     val hardMode: Boolean = false,

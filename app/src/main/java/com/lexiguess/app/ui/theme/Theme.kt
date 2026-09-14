@@ -9,34 +9,43 @@ import androidx.compose.runtime.staticCompositionLocalOf
 /** Composition local so any composable can read the current dark-mode preference. */
 val LocalDarkMode = staticCompositionLocalOf { false }
 
-private val DarkColorScheme = darkColorScheme(
-    primary = TileCorrect,
-    secondary = TileMisplacedDark,
-    background = BackgroundDark,
-    surface = SurfaceDark,
-    onPrimary = KeyTextDark,
-    onBackground = KeyTextDark,
-    onSurface = KeyTextDark,
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = TileCorrect,
-    secondary = TileMisplaced,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    onPrimary = KeyTextDark,
-    onBackground = KeyText,
-    onSurface = KeyText,
-)
+/** Composition local so any composable can read the active BoardTheme palette. */
+val LocalBoardTheme = staticCompositionLocalOf { EmeraldTheme }
 
 @Composable
 fun LexiGuessTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    boardTheme: BoardTheme = EmeraldTheme,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = if (darkTheme) {
+        darkColorScheme(
+            primary = boardTheme.correctColor,
+            secondary = boardTheme.misplacedColor,
+            tertiary = boardTheme.absentColor,
+            background = boardTheme.backgroundColor,
+            surface = boardTheme.surfaceColor,
+            onPrimary = KeyTextDark,
+            onBackground = boardTheme.onSurfaceColor,
+            onSurface = boardTheme.onSurfaceColor,
+        )
+    } else {
+        lightColorScheme(
+            primary = boardTheme.correctColor,
+            secondary = boardTheme.misplacedColor,
+            tertiary = boardTheme.absentColor,
+            background = BackgroundLight,
+            surface = SurfaceLight,
+            onPrimary = KeyTextDark,
+            onBackground = KeyText,
+            onSurface = KeyText,
+        )
+    }
 
-    CompositionLocalProvider(LocalDarkMode provides darkTheme) {
+    CompositionLocalProvider(
+        LocalDarkMode provides darkTheme,
+        LocalBoardTheme provides boardTheme,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = LexiGuessTypography,

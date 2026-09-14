@@ -29,6 +29,7 @@ import com.lexiguess.app.ui.theme.TileCorrect
 fun GameOverSheet(
     state: GameState,
     onPlayAgain: () -> Unit,
+    onShowAnalysis: () -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     if (!state.showGameOverSheet || state.status == GameStatus.IN_PROGRESS) return
@@ -127,7 +128,18 @@ fun GameOverSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedButton(
+                onClick = {
+                    onDismiss()
+                    onShowAnalysis()
+                },
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text("View Wordle Bot Analysis", fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
 
             // Action Buttons
             Row(

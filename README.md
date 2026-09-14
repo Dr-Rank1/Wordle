@@ -18,20 +18,22 @@ colour coding so the player can track which letters remain useful.
 
 ## Features
 
-## Features
-
+- **Multi-Board Puzzles (Dordle & Quordle)** — Solve 2 or 4 words simultaneously with custom split-colored keyboards reflecting letter status for each individual board.
+- **Word Vault & Vocabulary Codex** — Personal dictionary journal cataloging every word you solve, including definitions, parts of speech, usage examples, and mastery badges.
+- **Custom Challenge Maker & Share Codes** — Create custom secret word puzzles, generate shareable `LX-XXXX` challenge codes, and play challenges sent by friends.
+- **6 Dynamic Board Themes** — Customize the look with Classic Emerald, Midnight OLED, Cyberpunk Synth, Warm Sepia, Sunset Mirage, or High Contrast.
+- **Wordle Bot Candidate Elimination Analysis** — Round-by-round breakdown after each game showing exactly how many words remained and elimination percentages.
+- **Celebration Confetti Engine** — Pure Jetpack Compose canvas particle burst on victory.
 - **Multi-Length Word Support** — Play with 4, 5, 6, or 7-letter words, supported by over 37,000 curated words partitioned across dedicated dictionary tiers.
 - **50-Level Campaign Mode** — Journey through 4 progressive worlds (Beginner's Glade, The Lexicon Labyrinth, Semantic Citadel, Master's Sanctum) with 1 to 3 star ratings.
 - **Timed Rush Mode** — 60-second high-speed puzzle challenge with dynamic countdown progress bars and personal best tracking.
-- **Procedural Low-Latency Audio Engine** — Built from scratch with Android `AudioTrack` direct PCM synthesis. Zero audio file dependencies, instant response for key presses, rising chord arpeggios on tile reveal, victory fanfares, and error thuds.
+- **Procedural Low-Latency Audio Engine** — Built from scratch with Android `AudioTrack` direct PCM synthesis (key clicks, arpeggios, fanfares, thuds).
 - **Daily Word Puzzle** — Deterministically selected daily target word shared across all players globally.
-- **Hard Mode Rule Enforcement** — Option to mandate that revealed hints (correct and misplaced letters) must be used in subsequent guesses.
-- **Wordle Bot Candidate Counter** — Live computation indicating how many possible solutions remain after each guess.
+- **Hard Mode Rule Enforcement** — Option to mandate that revealed hints must be used in subsequent guesses.
 - **Player XP & Lexicographer Ranks** — Gain XP for every puzzle solved, unlocking progressive titles from Novice to Grand Lexicographer.
 - **16 Achievement Badges** — Milestone unlocks for winning streaks, multi-length word mastery, flawless solves, and speed records.
-- **Bottom Navigation Hub** — Clean Material 3 navigation bar connecting the Home Dashboard, Campaign Levels, Active Play, Statistics, and Badge Showcase.
-- **Haptic Feedback & Sound Toggles** — Custom tactile responses and audio settings configurable in the Settings menu.
-- **Dark Mode & Offline First** — Instant light/dark theme switching and complete offline playability with Room and DataStore persistence.
+- **Persistent Bottom Navigation** — Clean Material 3 navigation connecting Home, Campaign, Play, Stats, and Badges.
+- **Dark Mode & Offline First** — Complete offline playability with Room and DataStore persistence.
 
 ---
 

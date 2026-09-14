@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -30,6 +31,9 @@ fun HomeScreen(
     onNavigateToLevels: () -> Unit,
     onStartPractice: (Int) -> Unit,
     onStartDuel: () -> Unit,
+    onNavigateToMultiBoard: () -> Unit,
+    onNavigateToVault: () -> Unit,
+    onNavigateToChallenge: () -> Unit,
     onNavigateToStats: () -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
@@ -104,76 +108,90 @@ fun HomeScreen(
                     color = TileCorrect,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
+
+                Text(
+                    text = "${(progressInLevel * 400).toInt()}/400 XP to next rank",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
-        // Hero: Daily Challenge
+        // Daily Challenge Hero Card
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = TileCorrect,
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onStartDaily() },
-            shadowElevation = 2.dp,
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(20.dp)
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = TileCorrect.copy(alpha = 0.2f),
+                    ) {
+                        Text(
+                            text = "DAILY PUZZLE",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TileCorrect,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
                     Text(
-                        text = "DAILY CHALLENGE",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.85f),
-                        letterSpacing = 1.sp,
-                    )
-                    Text(
-                        text = "Today's Word",
+                        text = "Today's Word Challenge",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
-                        color = Color.White,
                     )
                     Text(
-                        text = "One puzzle per day. Keep your streak alive.",
+                        text = "Synchronized globally · Test your deduction",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 FilledIconButton(
                     onClick = onStartDaily,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = Color.White,
-                        contentColor = TileCorrect,
-                    ),
-                    modifier = Modifier.size(48.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = TileCorrect),
+                    modifier = Modifier.size(52.dp),
                 ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Play Daily")
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Daily",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp),
+                    )
                 }
             }
         }
 
-        // Section: Game Modes
+        // Mode Grid Header
         Text(
-            text = "GAME MODES",
+            text = "GAME MODES & HUBS",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.primary,
             letterSpacing = 1.5.sp,
         )
 
-        // 2x2 Modes Grid
+        // Row 1: Timed Rush & Campaign
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             ModeCard(
                 title = "Timed Rush",
-                subtitle = if (rushHighScore > 0) "Best: $rushHighScore pts" else "2-minute blitz",
+                subtitle = "60s · High Score: $rushHighScore",
                 icon = Icons.Outlined.Timer,
                 modifier = Modifier.weight(1f),
                 onClick = onStartRush,
@@ -187,23 +205,45 @@ fun HomeScreen(
             )
         }
 
+        // Row 2: Multi-Board & Word Vault
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             ModeCard(
-                title = "Custom Length",
+                title = "Multi-Board",
+                subtitle = "Dordle & Quordle",
+                icon = Icons.Outlined.GridView,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToMultiBoard,
+            )
+            ModeCard(
+                title = "Word Vault",
+                subtitle = "Collected vocabulary",
+                icon = Icons.AutoMirrored.Outlined.MenuBook,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToVault,
+            )
+        }
+
+        // Row 3: Custom Challenge & Word Lengths
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            ModeCard(
+                title = "Custom Puzzle",
+                subtitle = "Challenge a friend",
+                icon = Icons.Outlined.QrCode,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToChallenge,
+            )
+            ModeCard(
+                title = "Practice Lengths",
                 subtitle = "4, 5, 6, or 7 letters",
                 icon = Icons.Outlined.Tune,
                 modifier = Modifier.weight(1f),
                 onClick = { showLengthPicker = true },
-            )
-            ModeCard(
-                title = "Pass & Play",
-                subtitle = "2-Player local duel",
-                icon = Icons.Outlined.People,
-                modifier = Modifier.weight(1f),
-                onClick = onStartDuel,
             )
         }
 

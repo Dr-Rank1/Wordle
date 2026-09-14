@@ -45,6 +45,12 @@ class WordRepository @Inject constructor(
     fun randomWord(length: Int = 5): String =
         engine.selectRandomWord(length)
 
+    fun isValidWord(guess: String, length: Int = 5): Boolean =
+        engine.isValidWord(guess, length)
+
+    fun getValidWordsSet(length: Int = 5): Set<String> =
+        engine.getValidWordsSet(length)
+
     suspend fun fetchDefinition(word: String): String? = withContext(Dispatchers.IO) {
         try {
             val url = "https://api.dictionaryapi.dev/api/v2/entries/en/${word.lowercase().trim()}"

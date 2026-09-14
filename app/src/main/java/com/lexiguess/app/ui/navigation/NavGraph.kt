@@ -17,6 +17,9 @@ import androidx.navigation.compose.*
 import com.lexiguess.app.data.db.AchievementDao
 import com.lexiguess.app.data.db.LevelDao
 import com.lexiguess.app.data.repository.PlayerPreferences
+import com.lexiguess.app.data.db.VaultDao
+import com.lexiguess.app.data.repository.WordRepository
+import com.lexiguess.app.domain.MultiBoardEngine
 import com.lexiguess.app.ui.audio.SoundManager
 import com.lexiguess.app.ui.screen.*
 import com.lexiguess.app.ui.theme.TileCorrect
@@ -29,6 +32,9 @@ object Routes {
     const val STATS = "stats"
     const val BADGES = "badges"
     const val SETTINGS = "settings"
+    const val VAULT = "vault"
+    const val MULTI_BOARD = "multi_board"
+    const val CHALLENGE = "challenge"
 }
 
 data class NavItem(
@@ -51,6 +57,9 @@ fun LexiGuessNavGraph(
     playerPreferences: PlayerPreferences,
     levelDao: LevelDao,
     achievementDao: AchievementDao,
+    vaultDao: VaultDao,
+    wordRepository: WordRepository,
+    multiBoardEngine: MultiBoardEngine,
     soundManager: SoundManager,
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
@@ -140,6 +149,15 @@ fun LexiGuessNavGraph(
                         gameViewModel.startPracticeGame(5)
                         navController.navigate(Routes.GAME)
                     },
+                    onNavigateToMultiBoard = {
+                        navController.navigate(Routes.MULTI_BOARD)
+                    },
+                    onNavigateToVault = {
+                        navController.navigate(Routes.VAULT)
+                    },
+                    onNavigateToChallenge = {
+                        navController.navigate(Routes.CHALLENGE)
+                    },
                     onNavigateToStats = {
                         navController.navigate(Routes.STATS)
                     },
@@ -171,6 +189,38 @@ fun LexiGuessNavGraph(
                     onNavigateToSettings = {
                         navController.navigate(Routes.SETTINGS)
                     },
+                )
+            }
+
+            composable(Routes.MULTI_BOARD) {
+                MultiBoardScreen(
+                    multiBoardEngine = multiBoardEngine,
+                    wordRepository = wordRepository,
+                    soundManager = soundManager,
+                    playerPreferences = playerPreferences,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.VAULT) {
+                VaultScreen(
+                    vaultDao = vaultDao,
+                    onPracticeWord = { word ->
+                        gameViewModel.startPracticeWithTarget(word)
+                        navController.navigate(Routes.GAME)
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.CHALLENGE) {
+                CustomChallengeScreen(
+                    wordRepository = wordRepository,
+                    onStartChallengeGame = { word, attempts ->
+                        gameViewModel.startCustomChallenge(word, attempts)
+                        navController.navigate(Routes.GAME)
+                    },
+                    onBack = { navController.popBackStack() },
                 )
             }
 

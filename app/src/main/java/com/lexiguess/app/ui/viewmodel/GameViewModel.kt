@@ -6,6 +6,9 @@ import com.lexiguess.app.data.db.AchievementDao
 import com.lexiguess.app.data.db.GameRecord
 import com.lexiguess.app.data.db.LevelDao
 import com.lexiguess.app.data.db.LevelRecord
+import com.lexiguess.app.data.db.VaultDao
+import com.lexiguess.app.data.db.VaultWordRecord
+import com.lexiguess.app.data.repository.DictionaryHelper
 import com.lexiguess.app.data.repository.GameRepository
 import com.lexiguess.app.data.repository.PlayerPreferences
 import com.lexiguess.app.data.repository.WordRepository
@@ -16,6 +19,7 @@ import com.lexiguess.app.domain.model.GameState.Companion.MAX_ROWS
 import com.lexiguess.app.domain.model.GameStatus
 import com.lexiguess.app.domain.model.TileState
 import com.lexiguess.app.ui.audio.SoundManager
+import com.lexiguess.app.ui.composable.GuessStepAnalysis
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -35,12 +39,16 @@ class GameViewModel @Inject constructor(
     private val playerPreferences: PlayerPreferences,
     private val levelDao: LevelDao,
     private val achievementDao: AchievementDao,
+    private val vaultDao: VaultDao,
     val soundManager: SoundManager,
     private val engine: GameEngine,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
+
+    private val _guessAnalysisSteps = MutableStateFlow<List<GuessStepAnalysis>>(emptyList())
+    val guessAnalysisSteps: StateFlow<List<GuessStepAnalysis>> = _guessAnalysisSteps.asStateFlow()
 
     private var rushTimerJob: Job? = null
     private var roundStartTimeMs: Long = System.currentTimeMillis()
@@ -67,6 +75,7 @@ class GameViewModel @Inject constructor(
 
     fun startDailyGame() {
         cancelRushTimer()
+        _guessAnalysisSteps.value = emptyList()
         viewModelScope.launch {
             val target = wordRepository.dailyWord(5)
             gameRepository.startNewGame(target)
@@ -82,6 +91,7 @@ class GameViewModel @Inject constructor(
 
     fun startPracticeGame(length: Int = 5) {
         cancelRushTimer()
+        _guessAnalysisSteps.value = emptyList()
         val target = wordRepository.randomWord(length)
         roundStartTimeMs = System.currentTimeMillis()
         _state.value = createEmptyGameState(
@@ -91,8 +101,33 @@ class GameViewModel @Inject constructor(
         )
     }
 
+    fun startPracticeWithTarget(word: String) {
+        cancelRushTimer()
+        _guessAnalysisSteps.value = emptyList()
+        val clean = word.trim().uppercase()
+        roundStartTimeMs = System.currentTimeMillis()
+        _state.value = createEmptyGameState(
+            mode = GameMode.PRACTICE,
+            length = clean.length,
+            target = clean,
+        )
+    }
+
+    fun startCustomChallenge(word: String, maxAttempts: Int = 6) {
+        cancelRushTimer()
+        _guessAnalysisSteps.value = emptyList()
+        val clean = word.trim().uppercase()
+        roundStartTimeMs = System.currentTimeMillis()
+        _state.value = createEmptyGameState(
+            mode = GameMode.PRACTICE,
+            length = clean.length,
+            target = clean,
+        )
+    }
+
     fun startCampaignLevel(levelNumber: Int) {
         cancelRushTimer()
+        _guessAnalysisSteps.value = emptyList()
         viewModelScope.launch {
             val level = levelDao.getLevel(levelNumber)
             val target = level?.targetWord ?: wordRepository.randomWord(5)
@@ -108,6 +143,7 @@ class GameViewModel @Inject constructor(
 
     fun startTimedRush() {
         cancelRushTimer()
+        _guessAnalysisSteps.value = emptyList()
         val length = 5
         val target = wordRepository.randomWord(length)
         roundStartTimeMs = System.currentTimeMillis()
@@ -269,6 +305,14 @@ class GameViewModel @Inject constructor(
         _state.update { it.copy(showGameOverSheet = true) }
     }
 
+    fun showAnalysis() {
+        _state.update { it.copy(showAnalysisDialog = true) }
+    }
+
+    fun dismissAnalysis() {
+        _state.update { it.copy(showAnalysisDialog = false) }
+    }
+
     fun dismissMessage() {
         _state.update { it.copy(message = null) }
     }
@@ -312,6 +356,20 @@ class GameViewModel @Inject constructor(
             )
         }
         val remaining = if (won) 1 else engine.countRemainingCandidates(previousEvals, len)
+
+        val prevCandidates = if (_guessAnalysisSteps.value.isEmpty()) {
+            wordRepository.getValidWordsSet(len).size
+        } else {
+            _guessAnalysisSteps.value.last().remainingCandidates
+        }
+        val stepAnalysis = GuessStepAnalysis(
+            roundNumber = nextRow,
+            guessWord = guess,
+            rowStates = results,
+            remainingCandidates = remaining,
+            previousCandidates = prevCandidates,
+        )
+        _guessAnalysisSteps.update { it + stepAnalysis }
 
         val message = when (newStatus) {
             GameStatus.WON -> wonMessage(nextRow)
@@ -411,6 +469,24 @@ class GameViewModel @Inject constructor(
             if (attempts == 6) unlockAchievement("CLUTCH_6")
             if (durationSeconds < 45) unlockAchievement("SPEED_DEMON")
             if (s.hardMode) unlockAchievement("HARD_MODE_WIN")
+
+            // Word Vault record
+            try {
+                val defInfo = DictionaryHelper.resolveDefinition(s.targetWord)
+                val existing = vaultDao.getWord(s.targetWord)
+                vaultDao.upsert(
+                    VaultWordRecord(
+                        word = s.targetWord,
+                        length = s.wordLength,
+                        definition = defInfo.definition,
+                        partOfSpeech = defInfo.partOfSpeech,
+                        example = defInfo.example,
+                        timesSolved = (existing?.timesSolved ?: 0) + 1,
+                        bestGuesses = minOf(existing?.bestGuesses ?: 6, attempts),
+                        unlockedAt = existing?.unlockedAt ?: System.currentTimeMillis(),
+                    )
+                )
+            } catch (_: Exception) {}
 
             // Campaign level completion
             if (s.gameMode == GameMode.LEVEL && s.campaignLevel != null) {

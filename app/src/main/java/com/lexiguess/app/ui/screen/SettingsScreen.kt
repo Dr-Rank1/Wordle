@@ -1,5 +1,8 @@
 package com.lexiguess.app.ui.screen
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lexiguess.app.data.repository.PlayerPreferences
 import com.lexiguess.app.ui.audio.SoundManager
+import com.lexiguess.app.ui.theme.ALL_BOARD_THEMES
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -172,6 +176,57 @@ fun SettingsScreen(
                         }
                     },
                 )
+            }
+
+            // Board Theme Palette Selector
+            val currentBoardThemeId by playerPreferences.boardThemeFlow.collectAsState(initial = "EMERALD")
+
+            Text(
+                text = "Color Theme Palette",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ALL_BOARD_THEMES.forEach { theme ->
+                    val isSelected = currentBoardThemeId == theme.id
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = if (isSelected) BorderStroke(2.dp, theme.correctColor) else null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                coroutineScope.launch { playerPreferences.setBoardTheme(theme.id) }
+                            },
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                Text(theme.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                Text(theme.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+
+                            // Color swatches preview
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Canvas(modifier = Modifier.size(16.dp)) {
+                                    drawCircle(theme.correctColor)
+                                }
+                                Canvas(modifier = Modifier.size(16.dp)) {
+                                    drawCircle(theme.misplacedColor)
+                                }
+                                Canvas(modifier = Modifier.size(16.dp)) {
+                                    drawCircle(theme.backgroundColor)
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             HorizontalDivider()

@@ -54,6 +54,13 @@ class GameEngine(
     }
 
     /**
+     * Returns the set of all valid guesses for a given word length.
+     */
+    fun getValidWordsSet(expectedLength: Int = DEFAULT_WORD_LENGTH): Set<String> {
+        return multiLengthValid[expectedLength] ?: validWordsSet
+    }
+
+    /**
      * Evaluates [guess] against [target] and returns a list of [TileState] values.
      */
     fun evaluate(guess: String, target: String): List<TileState> {
