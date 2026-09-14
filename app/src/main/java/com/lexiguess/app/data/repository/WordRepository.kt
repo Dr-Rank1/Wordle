@@ -6,6 +6,9 @@ import com.lexiguess.app.domain.GameEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONArray
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,22 +17,25 @@ import javax.inject.Singleton
  * Hybrid word repository.
  *
  * Strategy:
- *  1. On first access, load words from the bundled `assets/words.txt`.
- *  2. In the background, attempt to fetch the latest list from the GitHub API
- *     and merge it into the live list via [GameEngine.mergeWords].
- *  3. The daily word is always selected deterministically from the merged list.
+ *  1. Bundles 2,315 curated target words (`assets/target_words.txt`) so daily/practice
+ *     words are always recognizable, fun English words.
+ *  2. Bundles 12,972 valid guess words (`assets/valid_words.txt`) so players can guess
+ *     any legitimate 5-letter word without getting erroneously rejected.
+ *  3. Fetches word definitions from the Free Dictionary API.
+ *  4. Syncs updates from remote API in background when connected.
  */
 @Singleton
 class WordRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val wordApiService: WordApiService,
+    private val okHttpClient: OkHttpClient,
     private val engine: GameEngine,
 ) {
     private var initialized = false
 
     /**
-     * Loads the local asset word list into the engine, then tries to refresh
-     * from the remote API. Safe to call multiple times (no-op after first call).
+     * Loads the local asset word lists into the engine, then tries to refresh
+     * from the remote API in the background. Safe to call multiple times.
      */
     suspend fun initialize() {
         if (initialized) return
@@ -44,15 +50,75 @@ class WordRepository @Inject constructor(
     fun dailyWord(): String =
         engine.selectDailyWord(LocalDate.now().toEpochDay())
 
-    private fun loadLocal() {
+    /** Returns a random word for Practice / Unlimited mode. */
+    fun randomWord(): String =
+        engine.selectRandomWord()
+
+    /**
+     * Fetches a short dictionary definition for the given [word] from the Free Dictionary API.
+     */
+    suspend fun fetchDefinition(word: String): String? = withContext(Dispatchers.IO) {
         try {
-            val lines = context.assets.open("words.txt")
+            val url = "https://api.dictionaryapi.dev/api/v2/entries/en/${word.lowercase().trim()}"
+            val request = Request.Builder().url(url).build()
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@use null
+                val body = response.body?.string() ?: return@use null
+                val json = JSONArray(body)
+                if (json.length() == 0) return@use null
+
+                val firstEntry = json.getJSONObject(0)
+                val meanings = firstEntry.optJSONArray("meanings") ?: return@use null
+                if (meanings.length() == 0) return@use null
+
+                val firstMeaning = meanings.getJSONObject(0)
+                val partOfSpeech = firstMeaning.optString("partOfSpeech", "")
+                val defs = firstMeaning.optJSONArray("definitions") ?: return@use null
+                if (defs.length() == 0) return@use null
+
+                val defText = defs.getJSONObject(0).optString("definition", "")
+                if (defText.isBlank()) return@use null
+
+                if (partOfSpeech.isNotBlank()) "($partOfSpeech) $defText" else defText
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun loadLocal() {
+        // 1. Curated target words (solutions)
+        try {
+            val targetLines = context.assets.open("target_words.txt")
                 .bufferedReader()
                 .readLines()
-            engine.mergeWords(lines)
-        } catch (e: Exception) {
-            // Seed with a small emergency list if the asset is missing
-            engine.mergeWords(EMERGENCY_WORDS)
+                .filter { it.isNotBlank() }
+            if (targetLines.isNotEmpty()) {
+                engine.setTargetWords(targetLines)
+            }
+        } catch (_: Exception) {
+            engine.setTargetWords(EMERGENCY_WORDS)
+        }
+
+        // 2. Full allowed guess dictionary
+        try {
+            val validLines = context.assets.open("valid_words.txt")
+                .bufferedReader()
+                .readLines()
+                .filter { it.isNotBlank() }
+            if (validLines.isNotEmpty()) {
+                engine.mergeWords(validLines)
+            }
+        } catch (_: Exception) {
+            try {
+                val fallbackLines = context.assets.open("words.txt")
+                    .bufferedReader()
+                    .readLines()
+                    .filter { it.isNotBlank() }
+                engine.mergeWords(fallbackLines)
+            } catch (_: Exception) {
+                engine.mergeWords(EMERGENCY_WORDS)
+            }
         }
     }
 
@@ -60,9 +126,11 @@ class WordRepository @Inject constructor(
         try {
             val raw = wordApiService.fetchWordList()
             val words = raw.lines().filter { it.isNotBlank() }
-            engine.mergeWords(words)
+            if (words.isNotEmpty()) {
+                engine.mergeWords(words)
+            }
         } catch (_: Exception) {
-            // Network unavailable – silently continue with local list
+            // Network unavailable – continue with offline asset dictionary
         }
     }
 
@@ -70,6 +138,7 @@ class WordRepository @Inject constructor(
         private val EMERGENCY_WORDS = listOf(
             "crane", "slate", "audio", "raise", "stare",
             "snare", "trace", "arose", "least", "light",
+            "blunt", "cloud", "draft", "earth", "flute",
         )
     }
 }

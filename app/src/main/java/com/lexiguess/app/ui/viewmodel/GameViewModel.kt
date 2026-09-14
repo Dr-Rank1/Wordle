@@ -33,15 +33,11 @@ class GameViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Initialize words (local + network)
             wordRepository.initialize()
 
-            val today = LocalDate.now().toString()
             if (gameRepository.hasActiveGameForToday()) {
-                // Restore in-progress game
                 restoreSession()
             } else {
-                // Start a fresh game
                 val target = wordRepository.dailyWord()
                 gameRepository.startNewGame(target)
                 _state.update { it.copy(targetWord = target) }
@@ -90,7 +86,6 @@ class GameViewModel @Inject constructor(
         val s = _state.value
         if (s.hintUsed || s.status != GameStatus.IN_PROGRESS) return
 
-        // Find positions already correctly placed
         val revealedCorrect = mutableSetOf<Int>()
         for (row in 0 until s.currentRow) {
             for (col in 0 until WORD_LENGTH) {
@@ -102,8 +97,8 @@ class GameViewModel @Inject constructor(
         if (hint != null) {
             val (col, char) = hint
             showMessage("Hint: position ${col + 1} is '$char'")
-            viewModelScope.launch {
-                gameRepository.saveHintUsed()
+            if (!s.isPracticeMode) {
+                viewModelScope.launch { gameRepository.saveHintUsed() }
             }
             _state.update { it.copy(hintUsed = true) }
         } else {
@@ -111,12 +106,36 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Starts a new round.
+     * @param practice If true, picks a fresh random target word for unlimited gameplay.
+     */
+    fun playAgain(practice: Boolean = true) {
+        viewModelScope.launch {
+            val nextWord = if (practice) wordRepository.randomWord() else wordRepository.dailyWord()
+            _state.update {
+                GameState(
+                    targetWord = nextWord,
+                    isPracticeMode = practice,
+                )
+            }
+        }
+    }
+
+    fun dismissGameOverSheet() {
+        _state.update { it.copy(showGameOverSheet = false) }
+    }
+
+    fun showGameOverSheet() {
+        _state.update { it.copy(showGameOverSheet = true) }
+    }
+
     fun dismissMessage() {
         _state.update { it.copy(message = null) }
     }
 
     // -------------------------------------------------------------------------
-    // Internal helpers
+    // Internal evaluation
     // -------------------------------------------------------------------------
 
     private fun submitGuess() {
@@ -125,11 +144,9 @@ class GameViewModel @Inject constructor(
         val results = engine.evaluate(guess, s.targetWord)
         val row = s.currentRow
 
-        // Update board tile states
         val newBoard = s.board.toMutableList().map { it.toMutableList() }
         results.forEachIndexed { col, tileState -> newBoard[row][col] = tileState }
 
-        // Update keyboard state (best known state wins: CORRECT > MISPLACED > ABSENT)
         val newKeyStates = s.keyStates.toMutableMap()
         results.forEachIndexed { col, tileState ->
             val key = guess[col]
@@ -166,27 +183,43 @@ class GameViewModel @Inject constructor(
             )
         }
 
-        // Auto-dismiss confetti after animation duration
-        if (won) {
+        // When game completes, fetch definition and present end-game dialog after tiles flip
+        if (newStatus != GameStatus.IN_PROGRESS) {
             viewModelScope.launch {
-                delay(3_600)
-                _state.update { it.copy(showConfetti = false) }
-            }
-        }
+                // Fetch definition in background
+                val def = wordRepository.fetchDefinition(s.targetWord)
+                _state.update { it.copy(definition = def) }
 
-        // Persist
-        viewModelScope.launch {
-            gameRepository.appendGuess(guess)
-            if (newStatus != GameStatus.IN_PROGRESS) {
-                gameRepository.finalizeGame(
-                    GameRecord(
-                        datePlayed = LocalDate.now().toString(),
-                        targetWord = s.targetWord,
-                        won = won,
-                        attempts = nextRow,
-                        guesses = buildStoredGuesses(s, guess),
+                // Wait for the tile flip animation to complete before showing summary sheet
+                delay(1_700)
+                _state.update { it.copy(showGameOverSheet = true) }
+            }
+
+            if (won) {
+                viewModelScope.launch {
+                    delay(3_600)
+                    _state.update { it.copy(showConfetti = false) }
+                }
+            }
+
+            // Persist to Room if in daily mode
+            if (!s.isPracticeMode) {
+                viewModelScope.launch {
+                    gameRepository.appendGuess(guess)
+                    gameRepository.finalizeGame(
+                        GameRecord(
+                            datePlayed = LocalDate.now().toString(),
+                            targetWord = s.targetWord,
+                            won = won,
+                            attempts = nextRow,
+                            guesses = buildStoredGuesses(s, guess),
+                        )
                     )
-                )
+                }
+            }
+        } else if (!s.isPracticeMode) {
+            viewModelScope.launch {
+                gameRepository.appendGuess(guess)
             }
         }
     }
@@ -198,7 +231,6 @@ class GameViewModel @Inject constructor(
         for (i in 0 until WORD_LENGTH) {
             row[i] = if (i < input.length) input[i] else ' '
         }
-        // Update tile states for the current (active) row
         val newTiles = s.board.toMutableList().map { it.toMutableList() }
         for (i in 0 until WORD_LENGTH) {
             newTiles[s.currentRow][i] = if (i < input.length) TileState.FILLED else TileState.EMPTY
@@ -277,18 +309,18 @@ class GameViewModel @Inject constructor(
     private fun triggerShake() {
         _state.update { it.copy(shake = true) }
         viewModelScope.launch {
-            delay(500)
+            delay(400)
             _state.update { it.copy(shake = false) }
         }
     }
 
     private fun wonMessage(attempts: Int): String = when (attempts) {
-        1 -> "Genius!"
-        2 -> "Magnificent!"
-        3 -> "Impressive!"
-        4 -> "Splendid!"
-        5 -> "Great!"
-        else -> "Phew!"
+        1 -> "Genius! 🎉"
+        2 -> "Magnificent! 🌟"
+        3 -> "Impressive! 👏"
+        4 -> "Splendid! 👍"
+        5 -> "Great! 😊"
+        else -> "Phew! 😅"
     }
 }
 

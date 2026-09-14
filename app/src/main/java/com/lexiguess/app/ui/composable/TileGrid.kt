@@ -1,6 +1,5 @@
 package com.lexiguess.app.ui.composable
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,15 +21,12 @@ import com.lexiguess.app.ui.theme.*
 import kotlinx.coroutines.delay
 
 /**
- * Renders the 6x5 Wordle board.
- *
- * Animations:
- *  - Tiles pop (scale up then down) when a letter is typed.
- *  - Submitted rows flip column-by-column; the reveal colour cross-fades in
- *    during the back-half of each flip rather than snapping.
- *  - When all 5 letters are entered the row bounces to signal it is ready
- *    to submit.
- *  - The current row shakes when an invalid word is submitted.
+ * Renders the 6x5 Wordle board with authentic, polished animations:
+ *  - Responsive tile sizing that adapts to all screen heights.
+ *  - Tactile pop animation when a letter is typed into a tile.
+ *  - Coordinated row bounce when all 5 letters are entered.
+ *  - Multi-stage 3D card flip reveal on submit.
+ *  - Natural shake animation on invalid submission.
  */
 @Composable
 fun TileGrid(
@@ -41,7 +37,7 @@ fun TileGrid(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         for (row in 0 until MAX_ROWS) {
@@ -74,55 +70,44 @@ private fun TileRow(
     inputLength: Int,
     darkMode: Boolean,
 ) {
-    // ---- Shake animation ---------------------------------------------------
-    val shakeOffset by produceState(0f, shake) {
+    // Shake animation
+    val shakeOffset = remember { Animatable(0f) }
+    LaunchedEffect(shake) {
         if (shake) {
-            for (offset in listOf(12f, -12f, 9f, -9f, 6f, -6f, 3f, -3f, 0f)) {
-                value = offset
-                delay(45)
+            val offsets = listOf(14f, -14f, 10f, -10f, 6f, -6f, 3f, -3f, 0f)
+            for (off in offsets) {
+                shakeOffset.animateTo(off, tween(35, easing = LinearEasing))
             }
-        } else {
-            value = 0f
         }
     }
 
-    // ---- Bounce animation when row is full ---------------------------------
-    // Key on inputLength reaching WORD_LENGTH while the row is the current one
-    val bounceKey = remember { mutableStateOf(0) }
+    // Row bounce when all 5 letters are ready
+    val rowBounce = remember { Animatable(1f) }
     LaunchedEffect(isCurrentRow, inputLength) {
         if (isCurrentRow && inputLength == WORD_LENGTH) {
-            bounceKey.value++
+            rowBounce.snapTo(1f)
+            rowBounce.animateTo(1.05f, tween(75, easing = LinearOutSlowInEasing))
+            rowBounce.animateTo(0.97f, tween(75, easing = FastOutSlowInEasing))
+            rowBounce.animateTo(1.0f, tween(90))
         }
     }
-    val bounceScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = keyframes {
-            durationMillis = 300
-            1.0f at 0
-            1.05f at 80
-            0.97f at 160
-            1.0f at 300
-        },
-        label = "row_bounce",
-    )
-    // Re-trigger by using the key
-    val (actualBounce) = remember(bounceKey.value) { mutableStateOf(bounceScale) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer {
-                translationX = shakeOffset
+                translationX = shakeOffset.value
+                scaleX = rowBounce.value
+                scaleY = rowBounce.value
             },
-        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
     ) {
         for (col in 0 until WORD_LENGTH) {
             TileCell(
                 letter = letters[col],
                 tileState = tileStates[col],
                 isSubmitted = isSubmitted,
-                revealDelayMs = col * 300L,
-                bounceKey = bounceKey.value,
+                revealDelayMs = col * 260L,
                 darkMode = darkMode,
             )
         }
@@ -139,110 +124,70 @@ private fun TileCell(
     tileState: TileState,
     isSubmitted: Boolean,
     revealDelayMs: Long,
-    bounceKey: Int,
     darkMode: Boolean,
 ) {
-    // ---- Flip animation ----------------------------------------------------
-    // Tracks whether THIS cell has completed its flip reveal.
-    var flipped by remember { mutableStateOf(false) }
-    LaunchedEffect(isSubmitted) {
-        if (isSubmitted && !flipped) {
-            delay(revealDelayMs)
-            flipped = true
+    // Pop animation on keypress
+    val popScale = remember { Animatable(1f) }
+    LaunchedEffect(letter) {
+        if (letter != ' ' && !isSubmitted) {
+            popScale.snapTo(1f)
+            popScale.animateTo(1.15f, tween(60, easing = LinearOutSlowInEasing))
+            popScale.animateTo(1.0f, tween(75, easing = FastOutSlowInEasing))
         }
     }
 
-    val rotationX by animateFloatAsState(
-        targetValue = if (flipped) 180f else 0f,
-        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-        label = "flip",
-    )
-
-    // Show result colour only after the flip passes 90°
-    val showResult = rotationX > 90f
-
-    // ---- Smooth colour cross-fade ------------------------------------------
-    // Target colour changes as flipped transitions and showResult becomes true.
-    val targetBgColor = if (showResult) tileState.toBackground(darkMode)
-    else tileState.toPreRevealBackground(darkMode)
-
-    val bgColor by animateColorAsState(
-        targetValue = targetBgColor,
-        animationSpec = tween(durationMillis = 120),
-        label = "tile_color",
-    )
-
-    val targetTextColor = if (showResult || tileState == TileState.ABSENT ||
-        tileState == TileState.CORRECT || tileState == TileState.MISPLACED
-    ) Color.White
-    else tileState.toTextColor(darkMode)
-
-    val textColor by animateColorAsState(
-        targetValue = targetTextColor,
-        animationSpec = tween(durationMillis = 120),
-        label = "text_color",
-    )
-
-    val borderColor = tileState.toBorder(darkMode)
-
-    // ---- Pop animation when letter is typed --------------------------------
-    // Triggered every time letter changes from ' ' to a char.
-    var popKey by remember { mutableStateOf(0) }
-    val prevLetter = remember { mutableStateOf(letter) }
-    if (letter != ' ' && prevLetter.value == ' ') {
-        popKey++
+    // 3D Flip reveal (0.0 to 1.0)
+    val flipProgress = remember { Animatable(if (isSubmitted) 1f else 0f) }
+    LaunchedEffect(isSubmitted) {
+        if (isSubmitted && flipProgress.value < 1f) {
+            delay(revealDelayMs)
+            flipProgress.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+        }
     }
-    prevLetter.value = letter
 
-    val popScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = keyframes {
-            durationMillis = 120
-            1.0f at 0
-            1.15f at 50
-            1.0f at 120
-        },
-        label = "pop_$popKey",
-    )
-    // Re-reading popKey ensures recomposition fires and the keyframe restarts
-    val effectivePop = remember(popKey) { popScale }
+    // Determine front vs back half of the 3D flip
+    val isBackSide = flipProgress.value >= 0.5f
 
-    // ---- Bounce animation for full row ------------------------------------
-    val bounceScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = keyframes {
-            durationMillis = 280
-            1.0f at 0
-            1.06f at 70
-            0.97f at 150
-            1.0f at 280
-        },
-        label = "bounce_$bounceKey",
-    )
-    val effectiveBounce = remember(bounceKey) { bounceScale }
+    // Calculate vertical 3D tilt
+    val rotationXDegrees = if (!isBackSide) {
+        // Front folding in: 0 deg to 90 deg
+        flipProgress.value * 180f
+    } else {
+        // Back unfolding out: 90 deg back to 0 deg
+        (1f - flipProgress.value) * 180f
+    }
 
-    val finalScale = when {
-        !isSubmitted && letter != ' ' -> effectivePop * effectiveBounce
-        else -> 1f
+    // Colors
+    val bgColor = if (isBackSide) {
+        tileState.toBackground(darkMode)
+    } else {
+        tileState.toPreRevealBackground(darkMode)
+    }
+
+    val textColor = if (isBackSide) {
+        Color.White
+    } else {
+        tileState.toTextColor(darkMode)
+    }
+
+    val borderColor = if (isBackSide) {
+        Color.Transparent
+    } else {
+        tileState.toBorder(darkMode)
     }
 
     Box(
         modifier = Modifier
             .size(56.dp)
             .graphicsLayer {
-                // Flip
-                this.rotationX = if (rotationX <= 90f) rotationX else 180f - rotationX
-                cameraDistance = 12f * density
-                // Pop / bounce scale
-                scaleX = finalScale
-                scaleY = finalScale
+                rotationX = rotationXDegrees
+                cameraDistance = 14f * density
+                scaleX = popScale.value
+                scaleY = popScale.value
             }
             .background(bgColor)
             .border(
-                width = when (tileState) {
-                    TileState.EMPTY, TileState.FILLED -> 2.dp
-                    else -> 0.dp
-                },
+                width = if (isBackSide || tileState == TileState.EMPTY) 2.dp else 2.dp,
                 color = borderColor,
             ),
         contentAlignment = Alignment.Center,
@@ -250,8 +195,8 @@ private fun TileCell(
         if (letter != ' ') {
             Text(
                 text = letter.toString(),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
                 color = textColor,
             )
         }
@@ -259,27 +204,28 @@ private fun TileCell(
 }
 
 // ---------------------------------------------------------------------------
-// Colour helpers
+// Colour mapping helpers
 // ---------------------------------------------------------------------------
 
 private fun TileState.toBackground(dark: Boolean): Color = when (this) {
     TileState.CORRECT -> TileCorrect
     TileState.MISPLACED -> if (dark) TileMisplacedDark else TileMisplaced
     TileState.ABSENT -> if (dark) TileAbsentDark else TileAbsent
-    TileState.FILLED -> if (dark) TileFilledDark else TileFilled
-    TileState.EMPTY -> if (dark) TileEmptyDark else TileEmpty
+    TileState.FILLED -> if (dark) BackgroundDark else BackgroundLight
+    TileState.EMPTY -> if (dark) BackgroundDark else BackgroundLight
 }
 
-private fun TileState.toPreRevealBackground(dark: Boolean): Color = when (this) {
-    TileState.FILLED -> if (dark) TileFilledDark else TileFilled
-    else -> if (dark) TileEmptyDark else TileEmpty
+private fun TileState.toPreRevealBackground(dark: Boolean): Color =
+    if (dark) BackgroundDark else BackgroundLight
+
+private fun TileState.toTextColor(dark: Boolean): Color = when (this) {
+    TileState.CORRECT, TileState.MISPLACED, TileState.ABSENT -> Color.White
+    TileState.FILLED -> if (dark) KeyTextDark else KeyText
+    TileState.EMPTY -> if (dark) KeyTextDark else KeyText
 }
 
 private fun TileState.toBorder(dark: Boolean): Color = when (this) {
-    TileState.FILLED -> if (dark) TileBorderFilledDark else TileBorderFilled
     TileState.EMPTY -> if (dark) TileBorderEmptyDark else TileBorderEmpty
-    else -> Color.Transparent
+    TileState.FILLED -> if (dark) TileBorderFilledDark else TileBorderFilled
+    TileState.CORRECT, TileState.MISPLACED, TileState.ABSENT -> Color.Transparent
 }
-
-private fun TileState.toTextColor(dark: Boolean): Color =
-    if (dark) Color.White else Color.Black

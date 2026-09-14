@@ -57,15 +57,14 @@ class GameEngineTest {
         // target = "speed", guess = "seedy"
         // s(0) correct, e(1) misplaced (one e left), e(2) misplaced? -> only 2 e's in target
         // Actually we test with words we know
-        val localEngine = GameEngine(mutableListOf("abbey", "speed", "eerie"))
-        // guess "eerie" vs target "speed" — e appears twice in target (positions 1,2)
-        val result = localEngine.evaluate("eerie", "speed")
-        // e(0) misplaced (e exists at 1 and 2 in speed), e(1) CORRECT, r(2) absent,
-        // i(3) absent, e(4) absent (both e's consumed)
-        assertEquals(TileState.MISPLACED, result[0])
+        val localEngine = GameEngine(mutableListOf("abbey", "speed", "spree"))
+        // guess "speed" vs target "spree" (s, p, r, e, e)
+        // s(0) CORRECT, p(1) CORRECT, e(2) MISPLACED (e at 4), e(3) CORRECT, d(4) ABSENT
+        val result = localEngine.evaluate("speed", "spree")
+        assertEquals(TileState.CORRECT, result[0])
         assertEquals(TileState.CORRECT, result[1])
-        assertEquals(TileState.ABSENT, result[2])
-        assertEquals(TileState.ABSENT, result[3])
+        assertEquals(TileState.MISPLACED, result[2])
+        assertEquals(TileState.CORRECT, result[3])
         assertEquals(TileState.ABSENT, result[4])
     }
 

@@ -6,22 +6,42 @@ import com.lexiguess.app.domain.model.TileState
  * Pure-Kotlin Wordle evaluation engine.
  *
  * This class contains no Android dependencies and can be unit-tested on the JVM.
- * Pass in a mutable word list; the list may grow at runtime as new words are
- * fetched from the network.
+ * Separates curated [targetWords] (solution candidates) from the broad [validWordsSet]
+ * (dictionary of acceptable guesses) for authentic Wordle gameplay.
  */
-class GameEngine(private val wordList: MutableList<String>) {
+class GameEngine(
+    private val wordList: MutableList<String> = mutableListOf(),
+    private val targetWords: MutableList<String> = mutableListOf(),
+) {
 
     companion object {
         const val WORD_LENGTH = 5
         const val MAX_ATTEMPTS = 6
     }
 
+    // Fast O(1) lookup set for valid guesses (lowercase)
+    private val validWordsSet: MutableSet<String> = HashSet(wordList.map { it.lowercase() })
+
+    init {
+        // Ensure any initial target words are also considered valid guesses
+        for (w in targetWords) {
+            val clean = w.lowercase().trim()
+            if (clean.length == WORD_LENGTH) {
+                validWordsSet.add(clean)
+                if (clean !in wordList) wordList.add(clean)
+            }
+        }
+    }
+
     /**
-     * Returns true when [guess] is exactly five letters long and appears in the
-     * current word list (case-insensitive).
+     * Returns true in O(1) time when [guess] is exactly five letters long and appears
+     * in the acceptable dictionary.
      */
-    fun isValidWord(guess: String): Boolean =
-        guess.length == WORD_LENGTH && wordList.any { it.equals(guess, ignoreCase = true) }
+    fun isValidWord(guess: String): Boolean {
+        if (guess.length != WORD_LENGTH) return false
+        val g = guess.lowercase()
+        return validWordsSet.contains(g) || wordList.any { it.equals(g, ignoreCase = true) }
+    }
 
     /**
      * Evaluates [guess] against [target] and returns a list of [TileState] values
@@ -65,21 +85,45 @@ class GameEngine(private val wordList: MutableList<String>) {
     }
 
     /**
-     * Selects a deterministic daily word from [wordList] using the current date
-     * as the seed, falling back to a random word if the list is empty.
+     * Sets the curated target solution words (e.g. 2,315 familiar words).
+     */
+    fun setTargetWords(incoming: List<String>) {
+        targetWords.clear()
+        for (word in incoming) {
+            val clean = word.trim().uppercase()
+            if (clean.length == WORD_LENGTH) {
+                targetWords.add(clean)
+                val lower = clean.lowercase()
+                validWordsSet.add(lower)
+                if (lower !in wordList) wordList.add(lower)
+            }
+        }
+    }
+
+    /**
+     * Selects a deterministic daily word from [targetWords] (or fallback to [wordList])
+     * using the current date seed.
      */
     fun selectDailyWord(dateEpochDay: Long): String {
-        if (wordList.isEmpty()) return "CRANE"
-        val index = (dateEpochDay % wordList.size).toInt().let {
-            if (it < 0) it + wordList.size else it
+        val pool = if (targetWords.isNotEmpty()) targetWords else wordList
+        if (pool.isEmpty()) return "CRANE"
+        val index = (dateEpochDay % pool.size).toInt().let {
+            if (it < 0) it + pool.size else it
         }
-        return wordList[index].uppercase()
+        return pool[index].uppercase()
+    }
+
+    /**
+     * Selects a random target word for unlimited / practice mode.
+     */
+    fun selectRandomWord(): String {
+        val pool = if (targetWords.isNotEmpty()) targetWords else wordList
+        return pool.randomOrNull()?.uppercase() ?: "CRANE"
     }
 
     /**
      * Returns a [TileState.CORRECT] hint for the first position that has not yet
-     * been correctly identified. Returns null if the player has already found all
-     * positions or if the current guess is empty.
+     * been correctly identified.
      */
     fun computeHint(
         target: String,
@@ -94,14 +138,12 @@ class GameEngine(private val wordList: MutableList<String>) {
         return null
     }
 
-    /** Appends new words to the live word list, deduplicating as it goes. */
+    /** Appends new valid words to the live dictionary, deduplicating as it goes. */
     fun mergeWords(incoming: List<String>) {
-        val existing = wordList.map { it.lowercase() }.toHashSet()
         for (word in incoming) {
-            val w = word.lowercase()
-            if (w.length == WORD_LENGTH && w !in existing) {
+            val w = word.trim().lowercase()
+            if (w.length == WORD_LENGTH && validWordsSet.add(w)) {
                 wordList.add(w)
-                existing.add(w)
             }
         }
     }
