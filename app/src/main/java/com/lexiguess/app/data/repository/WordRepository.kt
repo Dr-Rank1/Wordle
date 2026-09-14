@@ -1,6 +1,10 @@
 package com.lexiguess.app.data.repository
 
 import android.content.Context
+import com.lexiguess.app.data.db.AchievementDao
+import com.lexiguess.app.data.db.AchievementRecord
+import com.lexiguess.app.data.db.LevelDao
+import com.lexiguess.app.data.db.LevelRecord
 import com.lexiguess.app.data.network.WordApiService
 import com.lexiguess.app.domain.GameEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -13,50 +17,34 @@ import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Hybrid word repository.
- *
- * Strategy:
- *  1. Bundles 2,315 curated target words (`assets/target_words.txt`) so daily/practice
- *     words are always recognizable, fun English words.
- *  2. Bundles 12,972 valid guess words (`assets/valid_words.txt`) so players can guess
- *     any legitimate 5-letter word without getting erroneously rejected.
- *  3. Fetches word definitions from the Free Dictionary API.
- *  4. Syncs updates from remote API in background when connected.
- */
 @Singleton
 class WordRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val wordApiService: WordApiService,
     private val okHttpClient: OkHttpClient,
     private val engine: GameEngine,
+    private val levelDao: LevelDao,
+    private val achievementDao: AchievementDao,
 ) {
     private var initialized = false
 
-    /**
-     * Loads the local asset word lists into the engine, then tries to refresh
-     * from the remote API in the background. Safe to call multiple times.
-     */
     suspend fun initialize() {
         if (initialized) return
         withContext(Dispatchers.IO) {
-            loadLocal()
+            loadAllLocalDictionaries()
+            seedCampaignLevelsIfEmpty()
+            seedAchievementsIfEmpty()
             refreshFromNetwork()
             initialized = true
         }
     }
 
-    /** Returns the daily target word based on today's date. */
-    fun dailyWord(): String =
-        engine.selectDailyWord(LocalDate.now().toEpochDay())
+    fun dailyWord(length: Int = 5): String =
+        engine.selectDailyWord(LocalDate.now().toEpochDay(), length)
 
-    /** Returns a random word for Practice / Unlimited mode. */
-    fun randomWord(): String =
-        engine.selectRandomWord()
+    fun randomWord(length: Int = 5): String =
+        engine.selectRandomWord(length)
 
-    /**
-     * Fetches a short dictionary definition for the given [word] from the Free Dictionary API.
-     */
     suspend fun fetchDefinition(word: String): String? = withContext(Dispatchers.IO) {
         try {
             val url = "https://api.dictionaryapi.dev/api/v2/entries/en/${word.lowercase().trim()}"
@@ -86,40 +74,109 @@ class WordRepository @Inject constructor(
         }
     }
 
-    private fun loadLocal() {
-        // 1. Curated target words (solutions)
-        try {
-            val targetLines = context.assets.open("target_words.txt")
-                .bufferedReader()
-                .readLines()
-                .filter { it.isNotBlank() }
-            if (targetLines.isNotEmpty()) {
-                engine.setTargetWords(targetLines)
-            }
-        } catch (_: Exception) {
-            engine.setTargetWords(EMERGENCY_WORDS)
+    private fun loadAllLocalDictionaries() {
+        // 4-letter words
+        loadAssetFile("words_4.txt") { lines ->
+            engine.setTargetWords(lines.take(800), 4)
+            engine.mergeWords(lines, 4)
         }
 
-        // 2. Full allowed guess dictionary
+        // 5-letter target words
+        loadAssetFile("target_words.txt") { lines ->
+            engine.setTargetWords(lines, 5)
+        }
+
+        // 5-letter valid words
+        loadAssetFile("valid_words.txt") { lines ->
+            engine.mergeWords(lines, 5)
+        }
+
+        // 6-letter words
+        loadAssetFile("words_6.txt") { lines ->
+            engine.setTargetWords(lines.take(1500), 6)
+            engine.mergeWords(lines, 6)
+        }
+
+        // 7-letter words
+        loadAssetFile("words_7.txt") { lines ->
+            engine.setTargetWords(lines.take(2000), 7)
+            engine.mergeWords(lines, 7)
+        }
+    }
+
+    private inline fun loadAssetFile(filename: String, block: (List<String>) -> Unit) {
         try {
-            val validLines = context.assets.open("valid_words.txt")
+            val lines = context.assets.open(filename)
                 .bufferedReader()
                 .readLines()
+                .map { it.trim().lowercase() }
                 .filter { it.isNotBlank() }
-            if (validLines.isNotEmpty()) {
-                engine.mergeWords(validLines)
+            if (lines.isNotEmpty()) {
+                block(lines)
             }
         } catch (_: Exception) {
-            try {
-                val fallbackLines = context.assets.open("words.txt")
-                    .bufferedReader()
-                    .readLines()
-                    .filter { it.isNotBlank() }
-                engine.mergeWords(fallbackLines)
-            } catch (_: Exception) {
-                engine.mergeWords(EMERGENCY_WORDS)
-            }
+            // Asset load fallback
         }
+    }
+
+    private suspend fun seedCampaignLevelsIfEmpty() {
+        val count = levelDao.getLevel(1)
+        if (count != null) return
+
+        val sample4 = listOf("BIRD", "COLD", "FIRE", "GOLD", "LION", "MOON", "RAIN", "STAR", "WIND", "TREE")
+        val sample5 = listOf(
+            "APPLE", "BEACH", "CHAIR", "DREAM", "EARTH", "FLAME", "GRAPE", "HEART", "IMAGE", "JUICE",
+            "KNIFE", "LEMON", "MAGIC", "NIGHT", "OCEAN", "PIZZA", "QUEEN", "RIVER", "SUGAR", "TIGER"
+        )
+        val sample6 = listOf("BRIDGE", "CASTLE", "DRAGON", "FOREST", "GALAXY", "ISLAND", "JUNGLE", "KNIGHT", "MONKEY", "PLANET")
+        val sample7 = listOf("CHAMPION", "DIAMOND", "FANTASY", "HARMONY", "JOURNEY", "KINGDOM", "MYSTERY", "PHOENIX", "RAINBOW", "VICTORY")
+
+        val levels = mutableListOf<LevelRecord>()
+        var lvl = 1
+
+        // World 1: 4 letters (1-10)
+        for (w in sample4) {
+            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 4, targetWord = w))
+        }
+        // World 2: 5 letters (11-30)
+        for (w in sample5) {
+            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 5, targetWord = w))
+        }
+        // World 3: 6 letters (31-40)
+        for (w in sample6) {
+            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 6, targetWord = w))
+        }
+        // World 4: 7 letters (41-50)
+        for (w in sample7) {
+            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 7, targetWord = w))
+        }
+
+        levelDao.insertInitialLevels(levels)
+    }
+
+    private suspend fun seedAchievementsIfEmpty() {
+        val check = achievementDao.getAchievement("FIRST_WIN")
+        if (check != null) return
+
+        val initial = listOf(
+            AchievementRecord("FIRST_WIN", "First Triumph", "Win your first game in any mode", "Star", 0, 1),
+            AchievementRecord("WIN_5", "Word Enthusiast", "Win 5 games", "EmojiEvents", 0, 5),
+            AchievementRecord("WIN_25", "Vocab Veteran", "Win 25 games", "MilitaryTech", 0, 25),
+            AchievementRecord("STREAK_3", "On a Roll", "Reach a 3-day daily streak", "TrendingUp", 0, 3),
+            AchievementRecord("STREAK_7", "Week Warrior", "Reach a 7-day daily streak", "DateRange", 0, 7),
+            AchievementRecord("STREAK_30", "Iron Mind", "Reach a 30-day daily streak", "Shield", 0, 30),
+            AchievementRecord("GENIUS_1", "Pucker Up", "Solve a puzzle on Attempt 1", "Bolt", 0, 1),
+            AchievementRecord("CLUTCH_6", "Clutch King", "Solve a puzzle on Attempt 6", "Favorite", 0, 1),
+            AchievementRecord("SPEED_DEMON", "Speed Demon", "Solve a puzzle in under 45 seconds", "Timer", 0, 1),
+            AchievementRecord("RUSH_3", "Rush Runner", "Solve 3 words in one Timed Rush session", "Speed", 0, 3),
+            AchievementRecord("RUSH_6", "Rush Maestro", "Solve 6 words in one Timed Rush session", "WorkspacePremium", 0, 6),
+            AchievementRecord("LEVEL_10", "World 1 Conqueror", "Complete all Level 1-10 stages", "CheckCircle", 0, 10),
+            AchievementRecord("LEVEL_30", "World 2 Conqueror", "Complete all Level 11-30 stages", "CheckCircle", 0, 20),
+            AchievementRecord("LEVEL_50", "Grandmaster of Words", "Complete all 50 Campaign stages", "Grade", 0, 50),
+            AchievementRecord("HARD_MODE_WIN", "Steel Resolve", "Win a game with Hard Mode enabled", "Lock", 0, 1),
+            AchievementRecord("DUEL_PLAYED", "Friendly Rivalry", "Play a Pass & Play 2-Player Duel", "People", 0, 1),
+        )
+        achievementDao.insertInitialAchievements(initial)
     }
 
     private suspend fun refreshFromNetwork() {
@@ -127,18 +184,8 @@ class WordRepository @Inject constructor(
             val raw = wordApiService.fetchWordList()
             val words = raw.lines().filter { it.isNotBlank() }
             if (words.isNotEmpty()) {
-                engine.mergeWords(words)
+                engine.mergeWords(words, 5)
             }
-        } catch (_: Exception) {
-            // Network unavailable – continue with offline asset dictionary
-        }
-    }
-
-    companion object {
-        private val EMERGENCY_WORDS = listOf(
-            "crane", "slate", "audio", "raise", "stare",
-            "snare", "trace", "arose", "least", "light",
-            "blunt", "cloud", "draft", "earth", "flute",
-        )
+        } catch (_: Exception) {}
     }
 }

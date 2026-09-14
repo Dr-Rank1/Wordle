@@ -12,13 +12,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.lexiguess.app.domain.model.GameState
 import com.lexiguess.app.domain.model.GameState.Companion.MAX_ROWS
-import com.lexiguess.app.domain.model.GameState.Companion.WORD_LENGTH
 import com.lexiguess.app.domain.model.GameStatus
 import com.lexiguess.app.domain.model.TileState
 
 /**
  * Share button that builds a standard Wordle-style emoji grid and sends it to
- * the Android share sheet. Only visible once the game is finished.
+ * the Android share sheet. Works across any word length (4, 5, 6, 7).
  */
 @Composable
 fun ShareButton(
@@ -57,11 +56,11 @@ fun ShareButton(
 
 private fun buildShareText(state: GameState): String {
     val attemptsLabel = if (state.status == GameStatus.WON) "${state.currentRow}" else "X"
-    val header = "LexiGuess $attemptsLabel/$MAX_ROWS"
+    val header = "LexiGuess $attemptsLabel/$MAX_ROWS (${state.wordLength} Letters)"
 
     val rows = (0 until state.currentRow).joinToString("\n") { row ->
-        (0 until WORD_LENGTH).joinToString("") { col ->
-            state.board[row][col].toEmoji()
+        (0 until state.wordLength).joinToString("") { col ->
+            state.board[row].getOrElse(col) { TileState.EMPTY }.toEmoji()
         }
     }
 

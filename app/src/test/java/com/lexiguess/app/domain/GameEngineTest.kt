@@ -40,11 +40,7 @@ class GameEngineTest {
 
     @Test
     fun `evaluate returns all ABSENT for no matching letters`() {
-        val result = engine.evaluate("stare", "bring") // no letter overlap expected
-        // s not in bring, t not in bring, a not in bring, r in bring -> MISPLACED, e not in bring
-        // Actually let's verify individually
         val r = engine.evaluate("bunch", "stare")
-        // b,u,n,c,h – none in stare
         assertEquals(TileState.ABSENT, r[0])
         assertEquals(TileState.ABSENT, r[1])
         assertEquals(TileState.ABSENT, r[2])
@@ -54,18 +50,57 @@ class GameEngineTest {
 
     @Test
     fun `evaluate handles duplicate letters correctly`() {
-        // target = "speed", guess = "seedy"
-        // s(0) correct, e(1) misplaced (one e left), e(2) misplaced? -> only 2 e's in target
-        // Actually we test with words we know
         val localEngine = GameEngine(mutableListOf("abbey", "speed", "spree"))
-        // guess "speed" vs target "spree" (s, p, r, e, e)
-        // s(0) CORRECT, p(1) CORRECT, e(2) MISPLACED (e at 4), e(3) CORRECT, d(4) ABSENT
         val result = localEngine.evaluate("speed", "spree")
         assertEquals(TileState.CORRECT, result[0])
         assertEquals(TileState.CORRECT, result[1])
         assertEquals(TileState.MISPLACED, result[2])
         assertEquals(TileState.CORRECT, result[3])
         assertEquals(TileState.ABSENT, result[4])
+    }
+
+    @Test
+    fun `evaluate supports 4-letter words`() {
+        val r = engine.evaluate("bird", "bard")
+        assertEquals(TileState.CORRECT, r[0])
+        assertEquals(TileState.ABSENT, r[1])
+        assertEquals(TileState.CORRECT, r[2])
+        assertEquals(TileState.CORRECT, r[3])
+    }
+
+    @Test
+    fun `evaluate supports 6-letter words`() {
+        val r = engine.evaluate("castle", "cattle")
+        assertEquals(TileState.CORRECT, r[0])
+        assertEquals(TileState.CORRECT, r[1])
+        assertEquals(TileState.ABSENT, r[2]) // 's' absent in cattle
+        assertEquals(TileState.CORRECT, r[3])
+        assertEquals(TileState.CORRECT, r[4])
+        assertEquals(TileState.CORRECT, r[5])
+    }
+
+    @Test
+    fun `validateHardMode catches missing green letter`() {
+        // First guess: "crane" vs target "clash" -> 'C' at index 0 is CORRECT
+        val prev = listOf(
+            Pair("CRANE", listOf(TileState.CORRECT, TileState.ABSENT, TileState.ABSENT, TileState.ABSENT, TileState.ABSENT))
+        )
+        // Guess starting with 'P' violates hard mode
+        val err = engine.validateHardMode("PLANE", prev)
+        assertNotNull(err)
+        assertTrue(err!!.contains("1st letter must be C"))
+    }
+
+    @Test
+    fun `validateHardMode catches missing yellow letter`() {
+        // First guess: "crane" vs target "beach" -> 'A' at index 2 is MISPLACED
+        val prev = listOf(
+            Pair("CRANE", listOf(TileState.ABSENT, TileState.ABSENT, TileState.MISPLACED, TileState.ABSENT, TileState.ABSENT))
+        )
+        // Guess missing 'A' violates hard mode
+        val err = engine.validateHardMode("PILOT", prev)
+        assertNotNull(err)
+        assertTrue(err!!.contains("Guess must contain A"))
     }
 
     @Test
@@ -79,7 +114,7 @@ class GameEngineTest {
     fun `computeHint returns a position not yet correctly found`() {
         val hint = engine.computeHint("crane", revealedCorrect = emptySet())
         assertNotNull(hint)
-        assertEquals('C', hint!!.second) // position 0
+        assertEquals('C', hint!!.second)
     }
 
     @Test
@@ -97,7 +132,6 @@ class GameEngineTest {
         engine.mergeWords(listOf("alpha", "crane", "bravo"))
         assertTrue(engine.isValidWord("alpha"))
         assertTrue(engine.isValidWord("bravo"))
-        // crane was already there
         assertTrue(engine.isValidWord("crane"))
     }
 }

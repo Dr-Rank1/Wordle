@@ -2,20 +2,27 @@ package com.lexiguess.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lexiguess.app.data.db.AchievementDao
 import com.lexiguess.app.data.db.GameRecord
+import com.lexiguess.app.data.db.LevelDao
+import com.lexiguess.app.data.db.LevelRecord
 import com.lexiguess.app.data.repository.GameRepository
+import com.lexiguess.app.data.repository.PlayerPreferences
 import com.lexiguess.app.data.repository.WordRepository
 import com.lexiguess.app.domain.GameEngine
+import com.lexiguess.app.domain.model.GameMode
 import com.lexiguess.app.domain.model.GameState
 import com.lexiguess.app.domain.model.GameState.Companion.MAX_ROWS
-import com.lexiguess.app.domain.model.GameState.Companion.WORD_LENGTH
 import com.lexiguess.app.domain.model.GameStatus
 import com.lexiguess.app.domain.model.TileState
+import com.lexiguess.app.ui.audio.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -25,34 +32,149 @@ import javax.inject.Inject
 class GameViewModel @Inject constructor(
     private val wordRepository: WordRepository,
     private val gameRepository: GameRepository,
+    private val playerPreferences: PlayerPreferences,
+    private val levelDao: LevelDao,
+    private val achievementDao: AchievementDao,
+    val soundManager: SoundManager,
     private val engine: GameEngine,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
 
+    private var rushTimerJob: Job? = null
+    private var roundStartTimeMs: Long = System.currentTimeMillis()
+
     init {
         viewModelScope.launch {
             wordRepository.initialize()
+            val soundPref = playerPreferences.soundEnabledFlow.first()
+            soundManager.isEnabled = soundPref
+            val hardModePref = playerPreferences.hardModeFlow.first()
+            _state.update { it.copy(hardMode = hardModePref) }
 
             if (gameRepository.hasActiveGameForToday()) {
                 restoreSession()
             } else {
-                val target = wordRepository.dailyWord()
-                gameRepository.startNewGame(target)
-                _state.update { it.copy(targetWord = target) }
+                startDailyGame()
             }
         }
     }
 
     // -------------------------------------------------------------------------
-    // Public input handlers
+    // Mode Launchers
+    // -------------------------------------------------------------------------
+
+    fun startDailyGame() {
+        cancelRushTimer()
+        viewModelScope.launch {
+            val target = wordRepository.dailyWord(5)
+            gameRepository.startNewGame(target)
+            roundStartTimeMs = System.currentTimeMillis()
+            _state.value = GameState(
+                gameMode = GameMode.DAILY,
+                wordLength = 5,
+                targetWord = target,
+                hardMode = playerPreferences.hardModeFlow.first(),
+            )
+        }
+    }
+
+    fun startPracticeGame(length: Int = 5) {
+        cancelRushTimer()
+        val target = wordRepository.randomWord(length)
+        roundStartTimeMs = System.currentTimeMillis()
+        _state.value = createEmptyGameState(
+            mode = GameMode.PRACTICE,
+            length = length,
+            target = target,
+        )
+    }
+
+    fun startCampaignLevel(levelNumber: Int) {
+        cancelRushTimer()
+        viewModelScope.launch {
+            val level = levelDao.getLevel(levelNumber)
+            val target = level?.targetWord ?: wordRepository.randomWord(5)
+            val length = level?.wordLength ?: 5
+            roundStartTimeMs = System.currentTimeMillis()
+            _state.value = createEmptyGameState(
+                mode = GameMode.LEVEL,
+                length = length,
+                target = target,
+            ).copy(campaignLevel = levelNumber)
+        }
+    }
+
+    fun startTimedRush() {
+        cancelRushTimer()
+        val length = 5
+        val target = wordRepository.randomWord(length)
+        roundStartTimeMs = System.currentTimeMillis()
+
+        _state.value = createEmptyGameState(
+            mode = GameMode.TIMED_RUSH,
+            length = length,
+            target = target,
+        ).copy(
+            isRushActive = true,
+            rushTimeRemainingSeconds = 120,
+            rushWordsSolved = 0,
+            rushScore = 0,
+        )
+
+        launchRushTimer()
+    }
+
+    fun startDuel(secretWord: String) {
+        cancelRushTimer()
+        val clean = secretWord.trim().uppercase()
+        roundStartTimeMs = System.currentTimeMillis()
+        _state.value = createEmptyGameState(
+            mode = GameMode.DUEL,
+            length = clean.length,
+            target = clean,
+        ).copy(isDuelMode = true)
+    }
+
+    private fun launchRushTimer() {
+        rushTimerJob?.cancel()
+        rushTimerJob = viewModelScope.launch {
+            while (_state.value.rushTimeRemainingSeconds > 0 && _state.value.isRushActive) {
+                delay(1000)
+                _state.update {
+                    val remaining = it.rushTimeRemainingSeconds - 1
+                    if (remaining <= 0) {
+                        it.copy(
+                            rushTimeRemainingSeconds = 0,
+                            isRushActive = false,
+                            status = GameStatus.LOST,
+                            showGameOverSheet = true,
+                            message = "Time's up!",
+                        )
+                    } else {
+                        it.copy(rushTimeRemainingSeconds = remaining)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun cancelRushTimer() {
+        rushTimerJob?.cancel()
+        rushTimerJob = null
+    }
+
+    // -------------------------------------------------------------------------
+    // Player Input Handlers
     // -------------------------------------------------------------------------
 
     fun onKey(char: Char) {
         val s = _state.value
         if (s.status != GameStatus.IN_PROGRESS) return
-        if (s.currentInput.length >= WORD_LENGTH) return
+        if (s.currentInput.length >= s.wordLength) return
+
+        soundManager.playKeyClick()
         val newInput = s.currentInput + char.uppercaseChar()
         _state.update { it.copy(currentInput = newInput, message = null) }
         updateCurrentRowLetters(newInput)
@@ -61,6 +183,8 @@ class GameViewModel @Inject constructor(
     fun onBackspace() {
         val s = _state.value
         if (s.status != GameStatus.IN_PROGRESS || s.currentInput.isEmpty()) return
+
+        soundManager.playKeyClick()
         val newInput = s.currentInput.dropLast(1)
         _state.update { it.copy(currentInput = newInput, message = null) }
         updateCurrentRowLetters(newInput)
@@ -69,16 +193,36 @@ class GameViewModel @Inject constructor(
     fun onEnter() {
         val s = _state.value
         if (s.status != GameStatus.IN_PROGRESS) return
-        if (s.currentInput.length != WORD_LENGTH) {
+        if (s.currentInput.length != s.wordLength) {
             showMessage("Not enough letters")
+            soundManager.playError()
             triggerShake()
             return
         }
-        if (!engine.isValidWord(s.currentInput)) {
+        if (!engine.isValidWord(s.currentInput, s.wordLength)) {
             showMessage("Not in word list")
+            soundManager.playError()
             triggerShake()
             return
         }
+
+        // Hard mode rule check
+        if (s.hardMode && s.currentRow > 0) {
+            val previousEvals = (0 until s.currentRow).map { r ->
+                Pair(
+                    s.boardLetters[r].joinToString(""),
+                    s.board[r],
+                )
+            }
+            val hardModeError = engine.validateHardMode(s.currentInput, previousEvals)
+            if (hardModeError != null) {
+                showMessage(hardModeError)
+                soundManager.playError()
+                triggerShake()
+                return
+            }
+        }
+
         submitGuess()
     }
 
@@ -88,7 +232,7 @@ class GameViewModel @Inject constructor(
 
         val revealedCorrect = mutableSetOf<Int>()
         for (row in 0 until s.currentRow) {
-            for (col in 0 until WORD_LENGTH) {
+            for (col in 0 until s.wordLength) {
                 if (s.board[row][col] == TileState.CORRECT) revealedCorrect.add(col)
             }
         }
@@ -96,29 +240,24 @@ class GameViewModel @Inject constructor(
         val hint = engine.computeHint(s.targetWord, revealedCorrect)
         if (hint != null) {
             val (col, char) = hint
-            showMessage("Hint: position ${col + 1} is '$char'")
-            if (!s.isPracticeMode) {
-                viewModelScope.launch { gameRepository.saveHintUsed() }
-            }
+            showMessage("Hint: Position ${col + 1} is '$char'")
             _state.update { it.copy(hintUsed = true) }
         } else {
             showMessage("No hint available")
         }
     }
 
-    /**
-     * Starts a new round.
-     * @param practice If true, picks a fresh random target word for unlimited gameplay.
-     */
-    fun playAgain(practice: Boolean = true) {
-        viewModelScope.launch {
-            val nextWord = if (practice) wordRepository.randomWord() else wordRepository.dailyWord()
-            _state.update {
-                GameState(
-                    targetWord = nextWord,
-                    isPracticeMode = practice,
-                )
+    fun playAgain() {
+        val s = _state.value
+        when (s.gameMode) {
+            GameMode.DAILY -> startPracticeGame(s.wordLength)
+            GameMode.TIMED_RUSH -> startTimedRush()
+            GameMode.LEVEL -> {
+                val nextLevel = (s.campaignLevel ?: 1) + 1
+                if (nextLevel <= 50) startCampaignLevel(nextLevel) else startPracticeGame(5)
             }
+            GameMode.PRACTICE -> startPracticeGame(s.wordLength)
+            GameMode.DUEL -> startPracticeGame(5)
         }
     }
 
@@ -135,7 +274,7 @@ class GameViewModel @Inject constructor(
     }
 
     // -------------------------------------------------------------------------
-    // Internal evaluation
+    // Internal Evaluation
     // -------------------------------------------------------------------------
 
     private fun submitGuess() {
@@ -143,6 +282,7 @@ class GameViewModel @Inject constructor(
         val guess = s.currentInput.uppercase()
         val results = engine.evaluate(guess, s.targetWord)
         val row = s.currentRow
+        val len = s.wordLength
 
         val newBoard = s.board.toMutableList().map { it.toMutableList() }
         results.forEachIndexed { col, tileState -> newBoard[row][col] = tileState }
@@ -164,6 +304,15 @@ class GameViewModel @Inject constructor(
             else -> GameStatus.IN_PROGRESS
         }
 
+        // Remaining candidates metric
+        val previousEvals = (0..row).map { r ->
+            Pair(
+                if (r == row) guess else s.boardLetters[r].joinToString(""),
+                if (r == row) results else s.board[r],
+            )
+        }
+        val remaining = if (won) 1 else engine.countRemainingCandidates(previousEvals, len)
+
         val message = when (newStatus) {
             GameStatus.WON -> wonMessage(nextRow)
             GameStatus.LOST -> "The word was ${s.targetWord}"
@@ -173,25 +322,41 @@ class GameViewModel @Inject constructor(
         _state.update {
             it.copy(
                 board = newBoard,
-                boardLetters = buildBoardLetters(it.boardLetters, row, guess),
+                boardLetters = buildBoardLetters(it.boardLetters, row, guess, len),
                 keyStates = newKeyStates,
                 currentRow = nextRow,
                 currentInput = "",
                 status = newStatus,
                 showConfetti = won,
+                remainingCandidates = remaining,
                 message = message,
             )
         }
 
-        // When game completes, fetch definition and present end-game dialog after tiles flip
+        if (won) {
+            soundManager.playVictory()
+        }
+
+        // Handle game completion
         if (newStatus != GameStatus.IN_PROGRESS) {
+            val solveDurationSeconds = (System.currentTimeMillis() - roundStartTimeMs) / 1000
+
             viewModelScope.launch {
                 // Fetch definition in background
                 val def = wordRepository.fetchDefinition(s.targetWord)
                 _state.update { it.copy(definition = def) }
 
-                // Wait for the tile flip animation to complete before showing summary sheet
-                delay(1_700)
+                // Award XP and check achievements
+                handleGameEndRewards(s, won, nextRow, solveDurationSeconds)
+
+                // If Timed Rush and won, grant +15s bonus and load next word immediately!
+                if (s.gameMode == GameMode.TIMED_RUSH && won) {
+                    delay(1_400)
+                    advanceTimedRushWord()
+                    return@launch
+                }
+
+                delay(1_600)
                 _state.update { it.copy(showGameOverSheet = true) }
             }
 
@@ -201,38 +366,124 @@ class GameViewModel @Inject constructor(
                     _state.update { it.copy(showConfetti = false) }
                 }
             }
+        }
+    }
 
-            // Persist to Room if in daily mode
-            if (!s.isPracticeMode) {
-                viewModelScope.launch {
-                    gameRepository.appendGuess(guess)
-                    gameRepository.finalizeGame(
-                        GameRecord(
-                            datePlayed = LocalDate.now().toString(),
-                            targetWord = s.targetWord,
-                            won = won,
-                            attempts = nextRow,
-                            guesses = buildStoredGuesses(s, guess),
-                        )
-                    )
+    private fun advanceTimedRushWord() {
+        val s = _state.value
+        val nextWord = wordRepository.randomWord(5)
+        val newSolved = s.rushWordsSolved + 1
+        val scoreBonus = 200 + (s.rushTimeRemainingSeconds * 2)
+        val newScore = s.rushScore + scoreBonus
+        val newTime = (s.rushTimeRemainingSeconds + 15).coerceAtMost(180)
+
+        _state.value = createEmptyGameState(
+            mode = GameMode.TIMED_RUSH,
+            length = 5,
+            target = nextWord,
+        ).copy(
+            isRushActive = true,
+            rushTimeRemainingSeconds = newTime,
+            rushWordsSolved = newSolved,
+            rushScore = newScore,
+            message = "+15s! Score: $newScore",
+        )
+
+        viewModelScope.launch {
+            playerPreferences.updateRushHighScore(newScore)
+            if (newSolved >= 3) unlockAchievement("RUSH_3")
+            if (newSolved >= 6) unlockAchievement("RUSH_6")
+        }
+    }
+
+    private suspend fun handleGameEndRewards(
+        s: GameState,
+        won: Boolean,
+        attempts: Int,
+        durationSeconds: Long,
+    ) {
+        if (won) {
+            val xpGain = (MAX_ROWS - attempts + 1) * 35 + 50
+            playerPreferences.addXp(xpGain)
+
+            unlockAchievement("FIRST_WIN")
+            if (attempts == 1) unlockAchievement("GENIUS_1")
+            if (attempts == 6) unlockAchievement("CLUTCH_6")
+            if (durationSeconds < 45) unlockAchievement("SPEED_DEMON")
+            if (s.hardMode) unlockAchievement("HARD_MODE_WIN")
+
+            // Campaign level completion
+            if (s.gameMode == GameMode.LEVEL && s.campaignLevel != null) {
+                val stars = when (attempts) {
+                    1, 2 -> 3
+                    3, 4 -> 2
+                    else -> 1
                 }
+                levelDao.upsertLevel(
+                    LevelRecord(
+                        levelNumber = s.campaignLevel,
+                        wordLength = s.wordLength,
+                        targetWord = s.targetWord,
+                        stars = stars,
+                        bestAttempts = attempts,
+                        completed = true,
+                    )
+                )
+                if (s.campaignLevel >= 10) unlockAchievement("LEVEL_10")
+                if (s.campaignLevel >= 30) unlockAchievement("LEVEL_30")
+                if (s.campaignLevel >= 50) unlockAchievement("LEVEL_50")
             }
-        } else if (!s.isPracticeMode) {
-            viewModelScope.launch {
-                gameRepository.appendGuess(guess)
+
+            // Daily record
+            if (s.gameMode == GameMode.DAILY) {
+                gameRepository.finalizeGame(
+                    GameRecord(
+                        datePlayed = LocalDate.now().toString(),
+                        targetWord = s.targetWord,
+                        won = true,
+                        attempts = attempts,
+                        guesses = buildStoredGuesses(s, s.targetWord),
+                    )
+                )
             }
         }
     }
 
+    private suspend fun unlockAchievement(id: String) {
+        val existing = achievementDao.getAchievement(id) ?: return
+        if (!existing.unlocked) {
+            achievementDao.upsertAchievement(
+                existing.copy(
+                    unlocked = true,
+                    currentProgress = existing.targetProgress,
+                    unlockedAt = LocalDate.now().toString(),
+                )
+            )
+            playerPreferences.addXp(150) // Badge bonus XP
+        }
+    }
+
+    private fun createEmptyGameState(mode: GameMode, length: Int, target: String): GameState {
+        return GameState(
+            gameMode = mode,
+            wordLength = length,
+            targetWord = target,
+            board = List(MAX_ROWS) { List(length) { TileState.EMPTY } },
+            boardLetters = List(MAX_ROWS) { List(length) { ' ' } },
+            keyStates = ('A'..'Z').associateWith { TileState.EMPTY },
+        )
+    }
+
     private fun updateCurrentRowLetters(input: String) {
         val s = _state.value
+        val len = s.wordLength
         val newBoard = s.boardLetters.toMutableList().map { it.toMutableList() }
         val row = newBoard[s.currentRow]
-        for (i in 0 until WORD_LENGTH) {
+        for (i in 0 until len) {
             row[i] = if (i < input.length) input[i] else ' '
         }
         val newTiles = s.board.toMutableList().map { it.toMutableList() }
-        for (i in 0 until WORD_LENGTH) {
+        for (i in 0 until len) {
             newTiles[s.currentRow][i] = if (i < input.length) TileState.FILLED else TileState.EMPTY
         }
         _state.update {
@@ -247,9 +498,10 @@ class GameViewModel @Inject constructor(
         existing: List<List<Char>>,
         row: Int,
         guess: String,
+        length: Int,
     ): List<List<Char>> {
         val updated = existing.toMutableList().map { it.toMutableList() }
-        for (i in 0 until WORD_LENGTH) updated[row][i] = guess[i]
+        for (i in 0 until length) updated[row][i] = guess[i]
         return updated
     }
 
@@ -261,11 +513,11 @@ class GameViewModel @Inject constructor(
     }
 
     private suspend fun restoreSession() {
-        val target = gameRepository.savedTargetWord() ?: wordRepository.dailyWord()
+        val target = gameRepository.savedTargetWord() ?: wordRepository.dailyWord(5)
         val savedGuesses = gameRepository.savedGuesses()
         val hintUsed = gameRepository.savedHintUsed()
 
-        var tempState = GameState(targetWord = target, hintUsed = hintUsed)
+        var tempState = createEmptyGameState(GameMode.DAILY, 5, target).copy(hintUsed = hintUsed)
         for (guess in savedGuesses) {
             if (guess.isBlank()) continue
             val results = engine.evaluate(guess, target)
@@ -285,7 +537,7 @@ class GameViewModel @Inject constructor(
             val lost = !won && nextRow >= MAX_ROWS
             tempState = tempState.copy(
                 board = newBoard,
-                boardLetters = buildBoardLetters(tempState.boardLetters, row, guess),
+                boardLetters = buildBoardLetters(tempState.boardLetters, row, guess, 5),
                 keyStates = newKeyStates,
                 currentRow = nextRow,
                 status = when {
@@ -315,16 +567,20 @@ class GameViewModel @Inject constructor(
     }
 
     private fun wonMessage(attempts: Int): String = when (attempts) {
-        1 -> "Genius! 🎉"
-        2 -> "Magnificent! 🌟"
-        3 -> "Impressive! 👏"
-        4 -> "Splendid! 👍"
-        5 -> "Great! 😊"
-        else -> "Phew! 😅"
+        1 -> "Genius"
+        2 -> "Magnificent"
+        3 -> "Impressive"
+        4 -> "Splendid"
+        5 -> "Great"
+        else -> "Phew"
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        cancelRushTimer()
     }
 }
 
-/** Priority used to keep the best-known state for each keyboard key. */
 private fun TileState.priority(): Int = when (this) {
     TileState.CORRECT -> 3
     TileState.MISPLACED -> 2

@@ -5,41 +5,38 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.lexiguess.app.domain.model.GameMode
 import com.lexiguess.app.domain.model.GameStatus
 import com.lexiguess.app.ui.composable.*
 import com.lexiguess.app.ui.theme.TileCorrect
+import com.lexiguess.app.ui.theme.TileMisplaced
 import com.lexiguess.app.ui.viewmodel.GameViewModel
 
-/**
- * Main game screen.
- *
- * Hosts the header (with mode badge and instant practice restart), tile grid,
- * hint / play again buttons, on-screen keyboard, toast messages, confetti celebration,
- * and game-over summary modal with word definitions.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(
     viewModel: GameViewModel,
-    onNavigateToStats: () -> Unit,
+    onBackToHome: () -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+
+    var showDuelDialog by remember { mutableStateOf(false) }
+    var duelWordInput by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -49,32 +46,39 @@ fun GameScreen(
                     TopAppBar(
                         title = {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Text(
                                     text = "LexiGuess",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Black,
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+
+                                // Game Mode Badge
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = if (state.isPracticeMode) {
-                                        MaterialTheme.colorScheme.tertiaryContainer
-                                    } else {
-                                        TileCorrect.copy(alpha = 0.15f)
+                                    color = when (state.gameMode) {
+                                        GameMode.TIMED_RUSH -> TileMisplaced.copy(alpha = 0.18f)
+                                        GameMode.LEVEL -> MaterialTheme.colorScheme.primaryContainer
+                                        GameMode.DAILY -> TileCorrect.copy(alpha = 0.15f)
+                                        else -> MaterialTheme.colorScheme.surfaceVariant
                                     },
                                 ) {
                                     Text(
-                                        text = if (state.isPracticeMode) "PRACTICE" else "DAILY",
+                                        text = when (state.gameMode) {
+                                            GameMode.DAILY -> "DAILY"
+                                            GameMode.TIMED_RUSH -> "RUSH · ${state.rushTimeRemainingSeconds}s"
+                                            GameMode.LEVEL -> "LEVEL ${state.campaignLevel ?: 1}"
+                                            GameMode.PRACTICE -> "${state.wordLength}L PRACTICE"
+                                            GameMode.DUEL -> "DUEL"
+                                        },
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (state.isPracticeMode) {
-                                            MaterialTheme.colorScheme.onTertiaryContainer
-                                        } else {
-                                            TileCorrect
+                                        color = when (state.gameMode) {
+                                            GameMode.TIMED_RUSH -> TileMisplaced
+                                            GameMode.DAILY -> TileCorrect
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
                                         },
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                     )
@@ -82,16 +86,13 @@ fun GameScreen(
                             }
                         },
                         navigationIcon = {
-                            IconButton(onClick = onNavigateToStats) {
-                                Icon(Icons.Outlined.BarChart, contentDescription = "Statistics")
+                            IconButton(onClick = onBackToHome) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Home")
                             }
                         },
                         actions = {
-                            // New Game / Play Again button in app bar
-                            IconButton(
-                                onClick = { viewModel.playAgain(practice = true) },
-                            ) {
-                                Icon(Icons.Outlined.Refresh, contentDescription = "New Practice Word")
+                            IconButton(onClick = { viewModel.playAgain() }) {
+                                Icon(Icons.Outlined.Refresh, contentDescription = "Restart / Next")
                             }
                             IconButton(onClick = onNavigateToSettings) {
                                 Icon(Icons.Outlined.Settings, contentDescription = "Settings")
@@ -113,7 +114,38 @@ fun GameScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Toast notification (e.g. "Not in word list", "Not enough letters", or win toast)
+                // Timed Rush Live Bar (if active)
+                if (state.gameMode == GameMode.TIMED_RUSH && state.isRushActive) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "Solved: ${state.rushWordsSolved}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = "Score: ${state.rushScore}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = TileCorrect,
+                            )
+                        }
+                        LinearProgressIndicator(
+                            progress = { (state.rushTimeRemainingSeconds.toFloat() / 120f).coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth().height(6.dp),
+                            color = if (state.rushTimeRemainingSeconds < 25) MaterialTheme.colorScheme.error else TileCorrect,
+                        )
+                    }
+                }
+
+                // Toast notification
                 AnimatedVisibility(
                     visible = state.message != null,
                     enter = fadeIn() + slideInVertically(),
@@ -135,19 +167,29 @@ fun GameScreen(
                     }
                 }
 
-                // Main 6x5 Tile grid
+                // Wordle Bot elimination hint
+                if (state.currentRow > 0 && state.status == GameStatus.IN_PROGRESS && state.remainingCandidates > 0) {
+                    Text(
+                        text = "${state.remainingCandidates} possible solutions remaining",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+
+                // Main multi-length Tile Grid
                 TileGrid(
                     state = state,
+                    onTileFlipSound = { ts, col -> viewModel.soundManager.playTileFlip(ts, col) },
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .padding(vertical = 4.dp),
                 )
 
-                // Middle action bar: Hint (during game) or Play Again + Share (game over)
+                // Middle Actions
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 6.dp),
+                    modifier = Modifier.padding(vertical = 4.dp),
                 ) {
                     if (state.status == GameStatus.IN_PROGRESS) {
                         HintButton(
@@ -156,7 +198,7 @@ fun GameScreen(
                         )
                     } else {
                         Button(
-                            onClick = { viewModel.playAgain(practice = true) },
+                            onClick = { viewModel.playAgain() },
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = TileCorrect,
@@ -166,7 +208,10 @@ fun GameScreen(
                         ) {
                             Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(text = "Play Again", fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (state.gameMode == GameMode.LEVEL) "Next Level" else "Play Again",
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
 
                         ShareButton(
@@ -189,7 +234,7 @@ fun GameScreen(
             }
         }
 
-        // Win Confetti overlay
+        // Win Confetti
         ConfettiOverlay(
             active = state.showConfetti,
             modifier = Modifier
@@ -200,7 +245,7 @@ fun GameScreen(
         // Game Over Bottom Sheet with Word Definition & Play Again
         GameOverSheet(
             state = state,
-            onPlayAgain = { viewModel.playAgain(practice = true) },
+            onPlayAgain = { viewModel.playAgain() },
             onDismiss = { viewModel.dismissGameOverSheet() },
         )
     }

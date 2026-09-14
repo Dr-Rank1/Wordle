@@ -1,57 +1,201 @@
 package com.lexiguess.app.ui.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.lexiguess.app.ui.screen.GameScreen
-import com.lexiguess.app.ui.screen.SettingsScreen
-import com.lexiguess.app.ui.screen.StatsScreen
-import com.lexiguess.app.ui.theme.LexiGuessTheme
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.*
+import com.lexiguess.app.data.db.AchievementDao
+import com.lexiguess.app.data.db.LevelDao
+import com.lexiguess.app.data.repository.PlayerPreferences
+import com.lexiguess.app.ui.audio.SoundManager
+import com.lexiguess.app.ui.screen.*
+import com.lexiguess.app.ui.theme.TileCorrect
 import com.lexiguess.app.ui.viewmodel.GameViewModel
 
-private object Routes {
+object Routes {
+    const val HOME = "home"
     const val GAME = "game"
+    const val LEVELS = "levels"
     const val STATS = "stats"
+    const val BADGES = "badges"
     const val SETTINGS = "settings"
 }
 
-/**
- * Root navigation graph for LexiGuess.
- *
- * Also owns the dark-mode toggle state so it can be passed down to
- * [LexiGuessTheme] in [MainActivity] via [onDarkModeChange], and can be
- * surfaced to [SettingsScreen].
- */
+data class NavItem(
+    val route: String,
+    val label: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+)
+
+private val NAV_ITEMS = listOf(
+    NavItem(Routes.HOME, "Home", Icons.Filled.Home, Icons.Outlined.Home),
+    NavItem(Routes.LEVELS, "Levels", Icons.Filled.Flag, Icons.Outlined.Flag),
+    NavItem(Routes.GAME, "Play", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
+    NavItem(Routes.STATS, "Stats", Icons.Filled.BarChart, Icons.Outlined.BarChart),
+    NavItem(Routes.BADGES, "Badges", Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents),
+)
+
 @Composable
 fun LexiGuessNavGraph(
+    playerPreferences: PlayerPreferences,
+    levelDao: LevelDao,
+    achievementDao: AchievementDao,
+    soundManager: SoundManager,
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
 ) {
     val navController = rememberNavController()
-
-    // GameViewModel is scoped to the nav graph so it survives screen transitions
     val gameViewModel: GameViewModel = hiltViewModel()
 
-    NavHost(navController = navController, startDestination = Routes.GAME) {
-        composable(Routes.GAME) {
-            GameScreen(
-                viewModel = gameViewModel,
-                onNavigateToStats = { navController.navigate(Routes.STATS) },
-                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
-            )
-        }
-        composable(Routes.STATS) {
-            StatsScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                darkMode = darkMode,
-                onToggle = onDarkModeChange,
-                onBack = { navController.popBackStack() },
-            )
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val showBottomBar = currentRoute in listOf(
+        Routes.HOME,
+        Routes.LEVELS,
+        Routes.GAME,
+        Routes.STATS,
+        Routes.BADGES,
+    )
+
+    Scaffold(
+        bottomBar = {
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it }),
+            ) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ) {
+                    NAV_ITEMS.forEach { item ->
+                        val selected = currentRoute == item.route
+                        NavigationBarItem(
+                            icon = {
+                                Icon(
+                                    imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                    contentDescription = item.label,
+                                    tint = if (selected) TileCorrect else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = item.label,
+                                    color = if (selected) TileCorrect else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            selected = selected,
+                            onClick = {
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Routes.HOME,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable(Routes.HOME) {
+                HomeScreen(
+                    playerPreferences = playerPreferences,
+                    onStartDaily = {
+                        gameViewModel.startDailyGame()
+                        navController.navigate(Routes.GAME)
+                    },
+                    onStartRush = {
+                        gameViewModel.startTimedRush()
+                        navController.navigate(Routes.GAME)
+                    },
+                    onNavigateToLevels = {
+                        navController.navigate(Routes.LEVELS)
+                    },
+                    onStartPractice = { length ->
+                        gameViewModel.startPracticeGame(length)
+                        navController.navigate(Routes.GAME)
+                    },
+                    onStartDuel = {
+                        gameViewModel.startPracticeGame(5)
+                        navController.navigate(Routes.GAME)
+                    },
+                    onNavigateToStats = {
+                        navController.navigate(Routes.STATS)
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Routes.SETTINGS)
+                    },
+                )
+            }
+
+            composable(Routes.LEVELS) {
+                LevelsScreen(
+                    levelDao = levelDao,
+                    onSelectLevel = { levelNum ->
+                        gameViewModel.startCampaignLevel(levelNum)
+                        navController.navigate(Routes.GAME)
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.GAME) {
+                GameScreen(
+                    viewModel = gameViewModel,
+                    onBackToHome = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.HOME) { inclusive = true }
+                        }
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Routes.SETTINGS)
+                    },
+                )
+            }
+
+            composable(Routes.STATS) {
+                StatsScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.BADGES) {
+                AchievementsScreen(
+                    achievementDao = achievementDao,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
+                    playerPreferences = playerPreferences,
+                    soundManager = soundManager,
+                    darkMode = darkMode,
+                    onToggleDarkMode = onDarkModeChange,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 }

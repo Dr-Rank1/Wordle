@@ -11,29 +11,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lexiguess.app.domain.model.GameState
 import com.lexiguess.app.domain.model.GameState.Companion.MAX_ROWS
-import com.lexiguess.app.domain.model.GameState.Companion.WORD_LENGTH
 import com.lexiguess.app.domain.model.TileState
 import com.lexiguess.app.ui.theme.*
 import kotlinx.coroutines.delay
 
 /**
- * Renders the 6x5 Wordle board with authentic, polished animations:
- *  - Responsive tile sizing that adapts to all screen heights.
- *  - Tactile pop animation when a letter is typed into a tile.
- *  - Coordinated row bounce when all 5 letters are entered.
- *  - Multi-stage 3D card flip reveal on submit.
- *  - Natural shake animation on invalid submission.
+ * Renders the multi-length Wordle board (4, 5, 6, or 7 letters).
  */
 @Composable
 fun TileGrid(
     state: GameState,
+    onTileFlipSound: ((TileState, Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val darkMode = LocalDarkMode.current
+    val wordLength = state.wordLength
+
+    // Responsive tile size based on column count
+    val tileSize: Dp = when (wordLength) {
+        4 -> 60.dp
+        5 -> 54.dp
+        6 -> 46.dp
+        7 -> 40.dp
+        else -> 52.dp
+    }
+
+    val fontSize = when (wordLength) {
+        4 -> 26.sp
+        5 -> 22.sp
+        6 -> 19.sp
+        7 -> 16.sp
+        else -> 22.sp
+    }
 
     Column(
         modifier = modifier,
@@ -45,32 +59,35 @@ fun TileGrid(
                 row = row,
                 letters = state.boardLetters[row],
                 tileStates = state.board[row],
+                wordLength = wordLength,
+                tileSize = tileSize,
+                fontSize = fontSize,
                 isCurrentRow = row == state.currentRow,
                 isSubmitted = row < state.currentRow,
                 shake = state.shake && row == state.currentRow,
                 inputLength = if (row == state.currentRow) state.currentInput.length else 0,
+                onTileFlipSound = onTileFlipSound,
                 darkMode = darkMode,
             )
         }
     }
 }
 
-// ---------------------------------------------------------------------------
-// Row
-// ---------------------------------------------------------------------------
-
 @Composable
 private fun TileRow(
     row: Int,
     letters: List<Char>,
     tileStates: List<TileState>,
+    wordLength: Int,
+    tileSize: Dp,
+    fontSize: androidx.compose.ui.unit.TextUnit,
     isCurrentRow: Boolean,
     isSubmitted: Boolean,
     shake: Boolean,
     inputLength: Int,
+    onTileFlipSound: ((TileState, Int) -> Unit)?,
     darkMode: Boolean,
 ) {
-    // Shake animation
     val shakeOffset = remember { Animatable(0f) }
     LaunchedEffect(shake) {
         if (shake) {
@@ -81,10 +98,9 @@ private fun TileRow(
         }
     }
 
-    // Row bounce when all 5 letters are ready
     val rowBounce = remember { Animatable(1f) }
     LaunchedEffect(isCurrentRow, inputLength) {
-        if (isCurrentRow && inputLength == WORD_LENGTH) {
+        if (isCurrentRow && inputLength == wordLength) {
             rowBounce.snapTo(1f)
             rowBounce.animateTo(1.05f, tween(75, easing = LinearOutSlowInEasing))
             rowBounce.animateTo(0.97f, tween(75, easing = FastOutSlowInEasing))
@@ -100,33 +116,36 @@ private fun TileRow(
                 scaleX = rowBounce.value
                 scaleY = rowBounce.value
             },
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
     ) {
-        for (col in 0 until WORD_LENGTH) {
+        for (col in 0 until wordLength) {
             TileCell(
-                letter = letters[col],
-                tileState = tileStates[col],
+                letter = letters.getOrElse(col) { ' ' },
+                tileState = tileStates.getOrElse(col) { TileState.EMPTY },
+                tileSize = tileSize,
+                fontSize = fontSize,
+                column = col,
                 isSubmitted = isSubmitted,
-                revealDelayMs = col * 260L,
+                revealDelayMs = col * 250L,
+                onTileFlipSound = onTileFlipSound,
                 darkMode = darkMode,
             )
         }
     }
 }
 
-// ---------------------------------------------------------------------------
-// Cell
-// ---------------------------------------------------------------------------
-
 @Composable
 private fun TileCell(
     letter: Char,
     tileState: TileState,
+    tileSize: Dp,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    column: Int,
     isSubmitted: Boolean,
     revealDelayMs: Long,
+    onTileFlipSound: ((TileState, Int) -> Unit)?,
     darkMode: Boolean,
 ) {
-    // Pop animation on keypress
     val popScale = remember { Animatable(1f) }
     LaunchedEffect(letter) {
         if (letter != ' ' && !isSubmitted) {
@@ -136,28 +155,23 @@ private fun TileCell(
         }
     }
 
-    // 3D Flip reveal (0.0 to 1.0)
     val flipProgress = remember { Animatable(if (isSubmitted) 1f else 0f) }
     LaunchedEffect(isSubmitted) {
         if (isSubmitted && flipProgress.value < 1f) {
             delay(revealDelayMs)
-            flipProgress.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+            onTileFlipSound?.invoke(tileState, column)
+            flipProgress.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
         }
     }
 
-    // Determine front vs back half of the 3D flip
     val isBackSide = flipProgress.value >= 0.5f
 
-    // Calculate vertical 3D tilt
     val rotationXDegrees = if (!isBackSide) {
-        // Front folding in: 0 deg to 90 deg
         flipProgress.value * 180f
     } else {
-        // Back unfolding out: 90 deg back to 0 deg
         (1f - flipProgress.value) * 180f
     }
 
-    // Colors
     val bgColor = if (isBackSide) {
         tileState.toBackground(darkMode)
     } else {
@@ -178,7 +192,7 @@ private fun TileCell(
 
     Box(
         modifier = Modifier
-            .size(56.dp)
+            .size(tileSize)
             .graphicsLayer {
                 rotationX = rotationXDegrees
                 cameraDistance = 14f * density
@@ -187,7 +201,7 @@ private fun TileCell(
             }
             .background(bgColor)
             .border(
-                width = if (isBackSide || tileState == TileState.EMPTY) 2.dp else 2.dp,
+                width = 2.dp,
                 color = borderColor,
             ),
         contentAlignment = Alignment.Center,
@@ -195,7 +209,7 @@ private fun TileCell(
         if (letter != ' ') {
             Text(
                 text = letter.toString(),
-                fontSize = 24.sp,
+                fontSize = fontSize,
                 fontWeight = FontWeight.Black,
                 color = textColor,
             )
@@ -203,16 +217,11 @@ private fun TileCell(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Colour mapping helpers
-// ---------------------------------------------------------------------------
-
 private fun TileState.toBackground(dark: Boolean): Color = when (this) {
     TileState.CORRECT -> TileCorrect
     TileState.MISPLACED -> if (dark) TileMisplacedDark else TileMisplaced
     TileState.ABSENT -> if (dark) TileAbsentDark else TileAbsent
-    TileState.FILLED -> if (dark) BackgroundDark else BackgroundLight
-    TileState.EMPTY -> if (dark) BackgroundDark else BackgroundLight
+    TileState.FILLED, TileState.EMPTY -> if (dark) BackgroundDark else BackgroundLight
 }
 
 private fun TileState.toPreRevealBackground(dark: Boolean): Color =
@@ -220,8 +229,7 @@ private fun TileState.toPreRevealBackground(dark: Boolean): Color =
 
 private fun TileState.toTextColor(dark: Boolean): Color = when (this) {
     TileState.CORRECT, TileState.MISPLACED, TileState.ABSENT -> Color.White
-    TileState.FILLED -> if (dark) KeyTextDark else KeyText
-    TileState.EMPTY -> if (dark) KeyTextDark else KeyText
+    TileState.FILLED, TileState.EMPTY -> if (dark) KeyTextDark else KeyText
 }
 
 private fun TileState.toBorder(dark: Boolean): Color = when (this) {
