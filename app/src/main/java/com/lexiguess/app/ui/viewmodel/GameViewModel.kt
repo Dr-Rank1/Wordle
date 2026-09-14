@@ -161,8 +161,17 @@ class GameViewModel @Inject constructor(
                 currentRow = nextRow,
                 currentInput = "",
                 status = newStatus,
+                showConfetti = won,
                 message = message,
             )
+        }
+
+        // Auto-dismiss confetti after animation duration
+        if (won) {
+            viewModelScope.launch {
+                delay(3_600)
+                _state.update { it.copy(showConfetti = false) }
+            }
         }
 
         // Persist

@@ -12,6 +12,7 @@ package com.lexiguess.app.domain.model
  * @param status       Whether the game is in progress, won, or lost.
  * @param hintUsed     Whether the player has already used their one hint.
  * @param shake        True for one frame when an invalid submission is attempted (triggers animation).
+ * @param showConfetti True while the win confetti should be displayed.
  * @param message      A transient one-shot toast message (null = no message).
  */
 data class GameState(
@@ -24,6 +25,7 @@ data class GameState(
     val status: GameStatus = GameStatus.IN_PROGRESS,
     val hintUsed: Boolean = false,
     val shake: Boolean = false,
+    val showConfetti: Boolean = false,
     val message: String? = null,
 ) {
     companion object {
