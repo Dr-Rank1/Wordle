@@ -194,11 +194,36 @@ app/build/outputs/apk/debug/app-debug.apk
 ./gradlew testDebugUnitTest
 ```
 
+### Build Production Release APK
+```bash
+./gradlew assembleRelease
+# Generated APK: app/build/outputs/apk/release/app-release.apk (7.1 MB with R8 optimization)
+```
+
 ### Install onto Connected Device
 ```bash
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.lexiguess.app/.MainActivity
+adb shell am start -n com.rank.lexi/.MainActivity
 ```
+
+---
+
+## Production & Store Assets
+
+The `play_store_assets/` directory contains all metadata and graphic assets prepared for Google Play Console submission:
+
+- **Package Name**: `com.rank.lexi`
+- **App Logo (`icon_512x512.png`)**: 512 × 512 px PNG, 32-bit color, showcasing the extruded 2.5D emerald tile motif.
+- **Feature Graphic (`feature_graphic_1024x500.png`)**: 1024 × 500 px promotional landscape banner.
+- **Phone Screenshots**: 6 high-resolution 1080 × 2400 px PNG mockups:
+  - `screenshot_01_classic_daily.png` — Classic Daily Challenge with 3D extruded tiles and mechanical keyboard.
+  - `screenshot_02_multiboard.png` — Dordle & Quordle multi-board simultaneous gameplay with split keys.
+  - `screenshot_03_campaign_boss.png` — 50-Level Campaign World Map and Boss Health Bar battles.
+  - `screenshot_04_timed_blitz.png` — 120s Timed Rush high-speed sprint.
+  - `screenshot_05_lexi_bot_stats.png` — Post-game Lexi Bot breakdown and 28-day streak freeze calendar.
+  - `screenshot_06_themes_settings.png` — 6 Board palettes, 3-way Dark/Light theme, and 3D gyroscope tilt parallax.
+- **Short Description (`short_description.txt`)**: Tagline under the 80-character limit.
+- **Full Description (`full_description.txt`)**: Store listing copy under the 4,000-character limit.
 
 ---
 

@@ -1,0 +1,37 @@
+Experience word deduction redefined. LexiGuess brings the satisfying physical sensation of a tabletop board game directly to your fingertips with mechanical keycaps, extruded 2.5D acrylic tiles, responsive hardware gyroscope tilt parallax, and a zero-allocation procedural audio engine.
+
+Whether you are a casual word solver or a competitive linguist, LexiGuess delivers the most complete, feature-packed offline word puzzle experience on Android.
+
+TACTILE 2.5D & 3D HARDWARE FEEL
+• Mechanical 3D Keycaps: Every key press features authentic physical travel, extruded shadow lips, and specular chamfers.
+• Extruded Game Tiles & Recessed Tray: Letters sit in sunken wells and snap forward with rich ambient bounce lighting.
+• 3D Air-Lift Flip: Submitting a row lifts tiles toward the screen, dynamically catching overhead light before revealing green, amber, or slate results.
+• Hardware Gyroscope Tilt: Subtle 3D perspective shifts naturally as you angle and rotate your phone.
+
+8 EXCITING GAME MODES
+1. Daily Challenge: The synchronized global puzzle shared worldwide every 24 hours.
+2. Multi-Board Dordle & Quordle: Solve 2 or 4 secret words at the same time using synchronized split-color keyboards.
+3. 50-Level RPG Campaign: Journey across 4 distinct worlds, earn 3-star ratings, and battle Bosses with real-time health bars.
+4. Timed Rush (120s Blitz): Fast-paced deductive sprint. Chain quick solves to trigger combo multipliers before time expires.
+5. Daily Archive: Interactive 28-day calendar allowing you to play missed puzzles anytime.
+6. Pass & Play Duel: Compete head-to-head with friends on a single device with customized secret words.
+7. Unlimited Practice: Unlimited play across 4, 5, 6, and 7-letter word lengths without timers or paywalls.
+8. Custom Challenge Maker: Create custom secret puzzles and generate shareable LX challenge codes.
+
+RPG PROGRESSION & BOT ANALYSIS
+• Lexicographer Ranks & XP: Level up your player card from Novice to Grandmaster.
+• Automated Streak Shields: Bank up to 2 Streak Freezes that deploy automatically if you miss a day, preserving your hard-earned streak.
+• Lexi Bot Analysis: Review every game with information entropy breakdowns, candidate reduction metrics, and optimal move evaluations.
+• Daily Quests: Complete rotating challenges to earn bonus XP and streak items.
+
+CUSTOMIZATION & DISPLAY MODES
+• 6 Handcrafted Board Palettes: Classic Emerald, Obsidian Night, Cyberpunk Neon, Rose Gold, Royal Gold, and Solar Flare.
+• 3-Way Display Theme: Seamlessly switch between System Default, dedicated Light Mode, and battery-friendly Dark Mode.
+• Tactile Sensory Controls: Independent toggles for haptic feedback, procedural synthesizer clicks, and 3D gyroscope tilt.
+
+100% OFFLINE & PRIVACY FIRST
+• Zero Ads, Zero Paywalls: Pure puzzle gameplay with no annoying interruptions or pay-to-win mechanics.
+• No Account Required: Instant jump-in without registration or sign-ins.
+• Completely Offline: Comprehensive on-device dictionary validation and local Room SQLite storage ensure your stats and progress never leave your phone.
+
+Master your vocabulary, train your deduction skills, and feel every guess with LexiGuess!
