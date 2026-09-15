@@ -240,6 +240,7 @@ The `play_store_assets/` directory contains all metadata and graphic assets prep
 - **100% Local and On-Device**: All statistics, streak histories, campaign progress, and vocabulary records are stored exclusively on your device in a local Room SQLite database.
 - **No Telemetry / No Tracking**: Zero analytics SDKs, zero advertising networks, zero tracking cookies, and zero personal data collection.
 - **Network Access**: The `android.permission.INTERNET` permission is used strictly for optional, anonymous word definition queries via the Free Dictionary API.
+- **Full Policy Document**: See the official [Privacy Policy](PRIVACY_POLICY.md) for full legal disclosures and Google Play Console compliance.
 
 ---
 
