@@ -1,167 +1,223 @@
-# LexiGuess
+# LexiGuess 🔤
 
-A Wordle-style Android word-guessing game built with Kotlin and Jetpack Compose.
-The app is fully playable offline and silently refreshes its word pool from the
-GitHub Wordle word list whenever a network connection is available.
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0-7F52FF.svg?style=flat&logo=kotlin)](https://kotlinlang.org)
+[![Android](https://img.shields.io/badge/Platform-Android_8.0+_(API_26+)-3DDC84.svg?style=flat&logo=android)](https://developer.android.com)
+[![Compose](https://img.shields.io/badge/UI-Jetpack_Compose_Material_3-4285F4.svg?style=flat&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
+[![Architecture](https://img.shields.io/badge/Architecture-Clean_MVVM_+_MVI-FF6F00.svg?style=flat)](https://developer.android.com/topic/architecture)
+[![DI](https://img.shields.io/badge/DI-Hilt-yellow.svg?style=flat)](https://dagger.dev/hilt/)
+[![Database](https://img.shields.io/badge/Database-Room_SQLite-009688.svg?style=flat)](https://developer.android.com/training/data-storage/room)
+[![Tests](https://img.shields.io/badge/Unit_Tests-37_Passing-brightgreen.svg?style=flat)](app/src/test/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat)](LICENSE)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25_On--Device-success.svg?style=flat)](#privacy--data-safety)
 
----
-
-## What is LexiGuess?
-
-LexiGuess presents a new hidden five-letter word every day. The player has six
-attempts to guess it. After each guess, every tile flips to reveal whether its
-letter is in the correct position (green), present somewhere in the word
-(yellow), or absent entirely (grey). The on-screen keyboard mirrors the same
-colour coding so the player can track which letters remain useful.
+> **A tactile, modern, offline-first Android word deduction game.** Engineered with Jetpack Compose, Material 3, 2.5D extruded acrylic tiles, mechanical 3D keycaps, hardware gyroscope tilt parallax, multi-board Dordle/Quordle, campaign boss fights, and a low-latency procedural audio engine.
 
 ---
 
-## Features
+## 🌟 What Sets LexiGuess Apart?
 
-- **Multi-Board Puzzles (Dordle & Quordle)** — Solve 2 or 4 words simultaneously with custom split-colored keyboards reflecting letter status for each individual board.
-- **Word Vault & Vocabulary Codex** — Personal dictionary journal cataloging every word you solve, including definitions, parts of speech, usage examples, and mastery badges.
-- **Custom Challenge Maker & Share Codes** — Create custom secret word puzzles, generate shareable `LX-XXXX` challenge codes, and play challenges sent by friends.
-- **6 Dynamic Board Themes** — Customize the look with Classic Emerald, Midnight OLED, Cyberpunk Synth, Warm Sepia, Sunset Mirage, or High Contrast.
-- **Wordle Bot Candidate Elimination Analysis** — Round-by-round breakdown after each game showing exactly how many words remained and elimination percentages.
-- **Celebration Confetti Engine** — Pure Jetpack Compose canvas particle burst on victory.
-- **Multi-Length Word Support** — Play with 4, 5, 6, or 7-letter words, supported by over 37,000 curated words partitioned across dedicated dictionary tiers.
-- **50-Level Campaign Mode** — Journey through 4 progressive worlds (Beginner's Glade, The Lexicon Labyrinth, Semantic Citadel, Master's Sanctum) with 1 to 3 star ratings.
-- **Timed Rush Mode** — 60-second high-speed puzzle challenge with dynamic countdown progress bars and personal best tracking.
-- **Procedural Low-Latency Audio Engine** — Built from scratch with Android `AudioTrack` direct PCM synthesis (key clicks, arpeggios, fanfares, thuds).
-- **Daily Word Puzzle** — Deterministically selected daily target word shared across all players globally.
-- **Hard Mode Rule Enforcement** — Option to mandate that revealed hints must be used in subsequent guesses.
-- **Player XP & Lexicographer Ranks** — Gain XP for every puzzle solved, unlocking progressive titles from Novice to Grand Lexicographer.
-- **16 Achievement Badges** — Milestone unlocks for winning streaks, multi-length word mastery, flawless solves, and speed records.
-- **Persistent Bottom Navigation** — Clean Material 3 navigation connecting Home, Campaign, Play, Stats, and Badges.
-- **Dark Mode & Offline First** — Complete offline playability with Room and DataStore persistence.
+Most mobile word games are flat web view ports. **LexiGuess** was built from scratch to feel like a **physical board game in your hands**:
+
+- 🕹️ **Mechanical 3D Keycaps**: Each key features a 3.5dp physical press depression, extruded bottom lip shadows, and beveled top specular highlights.
+- 🀄 **Extruded 2.5D Game Tiles & Recessed Tray**: Empty slots appear as sunken wells stamped into a slate/wood tray; revealed letters feature gloss chamfers and dynamic colored ambient drop shadows.
+- 🌪️ **3D Air-Lift Flip**: Submitting a row lifts tiles toward the camera ($1.12\times$ scale at 90°), dynamically darkens them against directional light, and snaps them face-up with bounce lighting.
+- 📱 **Hardware Gyroscope Tilt Parallax**: Tilting your physical phone dynamically rotates the game board in 3D perspective using low-pass filtered gravity sensor data.
+- 🎨 **Adaptive 3-Way Display Theme**: System Default (follows OS day/night mode), Light Mode, and Dark Mode, switchable in 1 tap from the home screen.
+- 🔊 **Zero-Allocation Procedural Audio**: Key clicks, chorded flip arpeggios, and victory fanfares synthesized mathematically via direct PCM `AudioTrack` buffers.
 
 ---
 
-## Tech Stack
+## 🎮 Game Modes
 
-| Layer | Library / Tool |
+| Mode | Description |
 |---|---|
-| Language | Kotlin 2.0 |
-| UI | Jetpack Compose + Material 3 |
-| Architecture | MVVM, Clean Architecture (UI / Domain / Data) |
-| State Management | ViewModel + StateFlow |
-| Dependency Injection | Hilt (Dagger) |
-| Local Persistence | Room (Campaign levels, achievements, game history) + DataStore Preferences |
-| Audio Engine | Low-latency procedural PCM synthesis via Android AudioTrack |
-| Networking | Retrofit 2 + OkHttp 4 |
-| Async | Kotlin Coroutines + Flow |
-| Navigation | Jetpack Navigation Compose |
-| Testing | JUnit 4, Kotlin Coroutines Test, Compose UI Test |
-| Build | Gradle Kotlin DSL, AGP 8.5, KSP |
+| **📅 Daily Challenge** | The global daily puzzle shared deterministically across all players with streak tracking. |
+| **⚔️ Multi-Board (Dordle & Quordle)** | Solve 2 or 4 secret words simultaneously using multi-split colored keyboards. |
+| **🏰 50-Level Campaign** | 4 progressive worlds with star ratings, escalating difficulty, and **Boss Health Bar battles**. |
+| **⚡ Timed Rush (120s Blitz)** | High-speed puzzle sprint—solve as many words as possible before the clock expires. |
+| **🗓️ Daily Archive** | Interactive 28-day calendar allowing players to tap and replay any past missed daily puzzle. |
+| **👥 Pass & Play Duel** | 2-player local hot-seat battle on a single device. |
+| **🎯 Unlimited Practice** | Free play across 4, 5, 6, and 7-letter word lengths with zero lockout timers. |
+| **✉️ Custom Challenge Maker** | Create custom secret puzzles and generate shareable `LX-XXXX` alphanumeric challenge codes. |
 
 ---
 
-## Project Structure
+## 🏆 RPG Progression & Meta Systems
+
+- **Lexicographer Ranks & XP**: Earn XP on every solve to progress from *Novice* to *Grandmaster*.
+- **Streak Calendar & Automated Shields**: 28-day calendar tracking wins and missed days. Bank up to 2 **Streak Freezes** that automatically deploy if a day is missed.
+- **Word Vault & Vocabulary Codex**: Personal dictionary cataloging all solved words with parts of speech, phonetic definitions, and mastery stars.
+- **Lexi Bot Breakdown**: Post-game algorithmic analysis showing remaining candidate counts and elimination efficiency on every guess.
+- **Daily Quests**: Rotating daily missions granting bonus XP and cosmetics.
+- **16 Milestone Achievements**: Badges for speed records, multi-length word mastery, clutch wins, and flawless solves.
+
+---
+
+## 🎨 Personalization & Visuals
+
+- **6 Handcrafted Board Palettes**:
+  - `Classic Emerald` — Traditional Wordle green & warm ochre.
+  - `Midnight OLED` — Pitch black background with electric neon mint.
+  - `Cyberpunk Synth` — High-voltage cyan & hot magenta.
+  - `Rose Gold` — Soft pastel rose, warm amber, and slate.
+  - `Royal Gold` — Deep sapphire navy with lustrous imperial gold.
+  - `Solar Flare` — Radiant solar amber and fiery crimson.
+- **Tile Materials**: Unlockable Classic, Glassmorphism, Carbon Fiber, and Golden Obsidian tile styles.
+- **Confetti Victory Engine**: Physics-driven particle celebration rendered directly on the Compose Canvas.
+
+---
+
+## 🛠️ Architecture & Tech Stack
+
+LexiGuess strictly adheres to modern Android Clean Architecture and Unidirectional Data Flow (UDF).
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                           UI LAYER                              │
+│   Jetpack Compose · Material 3 · Compose Navigation · Canvas    │
+│   Sensors (Tilt Parallax) · AudioTrack Procedural Synthesizer   │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        VIEWMODEL LAYER                          │
+│        StateFlow · SharedFlow · SavedStateHandle · Hilt         │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         DOMAIN LAYER                            │
+│   GameEngine (Evaluator, Bot Clues, Modulo Hash, Hard Mode)     │
+│   MultiBoardEngine · BossFightEngine · ChallengeCodec           │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                          DATA LAYER                             │
+│   Room Database (Match history, Levels, Vault, Achievements)    │
+│   DataStore Preferences (XP, Theme, Tilt, Audio, High Scores)   │
+│   Assets (15,287 Offline Words: 4L, 5L, 6L, 7L) · FreeDict API  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Core Technologies
+- **Language**: Kotlin 2.0.0
+- **UI Toolkit**: Jetpack Compose (BOM 2024.06.00) + Material 3
+- **Dependency Injection**: Dagger Hilt 2.51.1
+- **Local Persistence**: Room SQLite 2.6.1 (with KSP) + Jetpack DataStore Preferences
+- **Hardware Integration**: Android `SensorManager` (`TYPE_GRAVITY`, `TYPE_ACCELEROMETER`)
+- **Audio Engine**: Direct PCM synthesis via Android `AudioTrack` (zero allocation, pre-cached static buffers)
+- **Networking**: Retrofit 2 + OkHttp 4 (used for optional anonymous definition lookups)
+- **Testing**: JUnit 4, Kotlinx Coroutines Test, Compose UI Test
+
+---
+
+## 📂 Project Structure
 
 ```
 app/src/main/java/com/lexiguess/app/
-  domain/
-    GameEngine.kt              Evaluation engine (multi-length, hard mode, candidate count)
-    model/
-      TileState.kt             Enum: EMPTY, FILLED, CORRECT, MISPLACED, ABSENT
-      GameStatus.kt            Enum: IN_PROGRESS, WON, LOST
-      GameState.kt             Immutable UI snapshot with timer, bot clues, and length
-      GameMode.kt              Enum: DAILY, PRACTICE, TIMED_RUSH, LEVEL, DUEL
-  data/
-    db/
-      GameRecord.kt            Room entity for match history
-      GameDao.kt               DAO: match streaks, win rates, distribution
-      LevelRecord.kt           Room entity for 50 campaign levels
-      LevelDao.kt              DAO: campaign progression and stars
-      AchievementRecord.kt     Room entity for 16 badges
-      AchievementDao.kt        DAO: badge unlocks and progress
-      AppDatabase.kt           Room database (v2)
-    network/
-      WordApiService.kt        Retrofit interface for dictionary updates
-      NetworkModule.kt         Hilt module: OkHttp + Retrofit
-    repository/
-      WordRepository.kt        Multi-tier dictionary loader + campaign/badge seeder
-      GameRepository.kt        Match history persistence
-      PlayerPreferences.kt     DataStore: XP, settings, audio, timed rush records
-    di/
-      DatabaseModule.kt        Hilt module: Room DAOs
-      EngineModule.kt          Hilt module: GameEngine singleton
-  ui/
-    audio/
-      SoundManager.kt          Procedural PCM sound synthesizer (clicks, arpeggios, fanfares)
-    theme/
-      Color.kt                 Wordle palette (light + dark)
-      Type.kt                  Typography
-      Theme.kt                 Material 3 theme
-    composable/
-      TileGrid.kt              Responsive grid with tile flip arpeggio sound callbacks
-      WordleKeyboard.kt        Proportionally weighted keyboard with haptic feedback
-      HintButton.kt            Single-use hint button
-      ShareButton.kt           Wordle-style share formatter
-      StatsChart.kt            Horizontal bar chart for guess distribution
-      GameOverSheet.kt         End-game modal sheet with definitions and retry options
-    screen/
-      HomeScreen.kt            Main dashboard with XP rank, daily card, and mode launcher
-      LevelsScreen.kt          50 campaign levels across 4 worlds
-      AchievementsScreen.kt    16 milestone badges with unlock progress
-      GameScreen.kt            Gameplay board with countdown timer and candidate tracker
-      StatsScreen.kt           Comprehensive player statistics, win rates, and streaks
-      SettingsScreen.kt        Audio, haptics, hard mode, and theme toggles
-    navigation/
-      NavGraph.kt              Material 3 NavigationBar and Compose NavHost
-    viewmodel/
-      GameViewModel.kt         Game lifecycle, timer, audio, XP awards, and state
-      StatsViewModel.kt        Aggregated stats and Room flows
-  LexiGuessApp.kt              Application class with Hilt
-  MainActivity.kt              Single-activity entry point
-app/src/main/assets/
-  words_4.txt                  3,176 4-letter words
-  target_words.txt             2,315 curated 5-letter solution words
-  valid_words.txt              12,972 valid 5-letter dictionary words
-  words_6.txt                  9,180 6-letter words
-  words_7.txt                  11,801 7-letter words
-app/src/test/
-  domain/GameEngineTest.kt     Unit test suite for evaluation and validation
+├── LexiGuessApp.kt                   # Hilt Application entry point
+├── MainActivity.kt                   # Single-activity root & Theme/Parallax providers
+├── data/
+│   ├── db/                           # Room Database entities & DAOs
+│   │   ├── AppDatabase.kt            # Room DB migration v2
+│   │   ├── GameDao.kt & Record.kt    # Match history, streaks, distributions
+│   │   ├── LevelDao.kt & Record.kt   # 50 campaign levels & star ratings
+│   │   ├── VaultDao.kt & Record.kt   # Vocabulary codex & definitions cache
+│   │   └── AchievementDao.kt         # 16 milestone badges
+│   ├── local/
+│   │   └── PlayerPreferences.kt      # DataStore: XP, Theme, Tilt, Haptics, Audio
+│   ├── network/
+│   │   └── WordApiService.kt         # Retrofit interface for remote dictionary fallback
+│   └── repository/
+│       ├── GameRepository.kt         # Streak logic, calendar queries, freeze shields
+│       ├── WordRepository.kt         # 15,287-word offline loader & definition lookup
+│       └── QuestRepository.kt        # Daily quest tracking & rewards
+├── domain/
+│   ├── GameEngine.kt                 # Multi-length evaluation, hash selector, Bot metrics
+│   ├── MultiBoardEngine.kt           # Dordle & Quordle state evaluation
+│   ├── ChallengeCodec.kt             # Share code encoder/decoder (LX-XXXX)
+│   └── model/                        # Immutable domain models (GameState, TileState, etc.)
+└── ui/
+    ├── audio/
+    │   └── SoundManager.kt           # Procedural PCM audio synthesizer
+    ├── composable/
+    │   ├── TileGrid.kt               # 2.5D Extruded tiles, recessed tray, 3D flip
+    │   ├── WordleKeyboard.kt         # Tactile 3D keycaps with physical depression
+    │   ├── ConfettiParticleEngine.kt # Physics-based Compose Canvas particles
+    │   ├── StreakCalendarDialog.kt   # 28-day streak matrix & archive launcher
+    │   └── GameOverSheet.kt          # End-game scorecard & definition sheet
+    ├── navigation/
+    │   └── NavGraph.kt               # NavigationHost & Material 3 BottomBar
+    ├── screen/
+    │   ├── HomeScreen.kt             # Dashboard, branding header, mode launcher
+    │   ├── GameScreen.kt             # Main game board & hardware keyboard listener
+    │   ├── MultiBoardScreen.kt       # Split-tile Dordle/Quordle screen
+    │   ├── SettingsScreen.kt         # Theme mode, 3D tilt, palettes, legal notices
+    │   ├── LevelsScreen.kt           # Campaign stage selector
+    │   ├── StatsScreen.kt            # Charts, streaks, win distributions
+    │   ├── VaultScreen.kt            # Vocabulary journal & practice launcher
+    │   ├── PassAndPlayScreen.kt      # 2-player local duel
+    │   └── AchievementsScreen.kt     # Badge unlock showcases
+    ├── theme/
+    │   ├── Color.kt & Theme.kt       # 6 Board palettes & light/dark color schemes
+    │   └── Type.kt                   # Custom typography scales
+    └── util/
+        └── TiltParallax.kt           # Low-pass filtered sensor-driven 3D tilt
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+- **Android Studio**: Ladybug (2024.2.1) or later recommended.
+- **JDK**: Version 17 or 21.
+- **Android Device / Emulator**: Running Android 8.0 (API level 26) or higher.
 
-- Android Studio Hedgehog (2023.1.1) or later
-- JDK 17 or higher
-- Android device or emulator running API 24 or higher
-
-### Clone and Build
-
+### Clone & Build
 ```bash
 git clone https://github.com/Dr-Rank1/Wordle.git
 cd Wordle
+
+# Build debug APK
 ./gradlew assembleDebug
 ```
 
-Install directly on a connected device or running emulator:
-
-```bash
-./gradlew installDebug
+The APK will be generated at:
+```
+app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ### Run Unit Tests
-
 ```bash
 ./gradlew testDebugUnitTest
 ```
 
+### Install onto Connected Device
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.lexiguess.app/.MainActivity
+```
+
 ---
 
-## Contributing
+## ⚖️ Legal & Trademark Notice
 
-Contributions and feedback are welcome. Please ensure all unit tests pass before submitting pull requests.
+- **Trademark Disclaimer**: *Wordle* is a registered trademark of **The New York Times Company** (USPTO Reg. No. 6,838,829). **LexiGuess is an independent game** and is not affiliated with, sponsored by, authorized by, or endorsed by The New York Times Company or any of its subsidiaries.
+- **Game Mechanics**: Under 17 U.S.C. § 102(b), game mechanics and systems of rules are not copyrightable. The deductive letter-matching mechanic originates from the public-domain games *Jotto* (1955), *Mastermind* (1970), and *Lingo* (1987).
+- **Daily Word Scheduling**: Daily puzzle solutions in LexiGuess are determined via an independent algorithmic epoch hash and do not replicate or copy the chronological solution list of any third-party game.
 
 ---
 
-## License
+## 🛡️ Privacy & Data Safety
 
-MIT License. See [LICENSE](LICENSE) for full text.
+- **100% Local & On-Device**: All statistics, streak histories, campaign progress, and vocabulary records are stored exclusively on your device in a local Room SQLite database.
+- **No Telemetry / No Tracking**: Zero analytics SDKs, zero advertising networks, zero tracking cookies, and zero personal data collection.
+- **Network Access**: The `android.permission.INTERNET` permission is used strictly for optional, anonymous word definition queries via the Free Dictionary API.
+
+---
+
+## 📄 License
+
+This project is open source and available under the terms of the [MIT License](LICENSE).
