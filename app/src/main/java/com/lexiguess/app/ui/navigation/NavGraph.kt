@@ -68,8 +68,9 @@ fun LexiGuessNavGraph(
     gameEngine: GameEngine,
     soundManager: SoundManager,
     questRepository: com.lexiguess.app.data.repository.QuestRepository,
+    themePref: String = "SYSTEM",
     darkMode: Boolean,
-    onDarkModeChange: (Boolean) -> Unit,
+    onThemeChange: (String) -> Unit,
 ) {
     val navController = rememberNavController()
     val gameViewModel: GameViewModel = hiltViewModel()
@@ -193,6 +194,12 @@ fun LexiGuessNavGraph(
                     onNavigateToPassAndPlay = {
                         navController.navigate(Routes.PASS_AND_PLAY)
                     },
+                    themePref = themePref,
+                    darkMode = darkMode,
+                    onToggleTheme = {
+                        val next = if (darkMode) "LIGHT" else "DARK"
+                        onThemeChange(next)
+                    },
                 )
             }
 
@@ -296,8 +303,9 @@ fun LexiGuessNavGraph(
                 SettingsScreen(
                     playerPreferences = playerPreferences,
                     soundManager = soundManager,
+                    themePref = themePref,
                     darkMode = darkMode,
-                    onToggleDarkMode = onDarkModeChange,
+                    onThemeChange = onThemeChange,
                     onBack = { navController.popBackStack() },
                 )
             }

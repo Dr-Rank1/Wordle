@@ -64,7 +64,7 @@ fun PostGameAnalysisDialog(
                             letterSpacing = 1.5.sp,
                         )
                         Text(
-                            text = "Wordle Bot Breakdown",
+                            text = "Lexi Bot Breakdown",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Black,
                         )

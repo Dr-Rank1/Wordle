@@ -45,6 +45,9 @@ fun HomeScreen(
     onNavigateToPassAndPlay: () -> Unit = {},
     wonDates: Set<String> = emptySet(),
     onStartArchiveDaily: ((java.time.LocalDate) -> Unit)? = null,
+    themePref: String = "SYSTEM",
+    darkMode: Boolean = true,
+    onToggleTheme: () -> Unit = {},
 ) {
     val xp by playerPreferences.xpFlow.collectAsState(initial = 0)
     val rushHighScore by playerPreferences.rushHighScoreFlow.collectAsState(initial = 0)
@@ -63,8 +66,71 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Top App Header: Logo, Title, Quick Theme Toggle, and Settings
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = TileCorrect,
+                    modifier = Modifier.size(38.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "L",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 22.sp,
+                            color = Color.White,
+                        )
+                    }
+                }
+                Column {
+                    Text(
+                        text = "LexiGuess",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Text(
+                        text = "Tactical Word Puzzle",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Quick Theme Toggle (Sun/Moon)
+                IconButton(onClick = onToggleTheme) {
+                    Icon(
+                        imageVector = if (darkMode) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+                        contentDescription = if (darkMode) "Switch to Light Mode" else "Switch to Dark Mode",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                // Settings Screen Navigation
+                IconButton(onClick = onNavigateToSettings) {
+                    Icon(
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+
         // Top Player Profile Card with Streak & Shield Badges
         Surface(
             shape = RoundedCornerShape(16.dp),

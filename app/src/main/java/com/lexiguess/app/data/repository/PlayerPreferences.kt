@@ -22,7 +22,7 @@ class PlayerPreferences @Inject constructor(
     val soundEnabledFlow: Flow<Boolean> = dataStore.data.map { it[KEY_SOUND] ?: true }
     val hapticsEnabledFlow: Flow<Boolean> = dataStore.data.map { it[KEY_HAPTICS] ?: true }
     val hardModeFlow: Flow<Boolean> = dataStore.data.map { it[KEY_HARD_MODE] ?: false }
-    val themeFlow: Flow<String> = dataStore.data.map { it[KEY_THEME] ?: "DARK" }
+    val themeFlow: Flow<String> = dataStore.data.map { it[KEY_THEME] ?: "SYSTEM" }
     val boardThemeFlow: Flow<String> = dataStore.data.map { it[KEY_BOARD_THEME] ?: "EMERALD" }
     val rushHighScoreFlow: Flow<Int> = dataStore.data.map { it[KEY_RUSH_HIGH_SCORE] ?: 0 }
     val streakFreezesFlow: Flow<Int> = dataStore.data.map { it[KEY_STREAK_FREEZES] ?: 1 }

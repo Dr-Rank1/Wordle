@@ -4,11 +4,7 @@ import retrofit2.http.GET
 import retrofit2.http.Url
 
 /**
- * Retrofit interface for fetching the Wordle word list from the GitHub raw
- * content API.
- *
- * Default URL: https://raw.githubusercontent.com/tabatkins/wordle-list/main/words
- * (plain-text, one word per line, no headers).
+ * Retrofit interface for fetching optional dictionary word lists.
  */
 interface WordApiService {
 
@@ -23,6 +19,6 @@ interface WordApiService {
     companion object {
         const val BASE_URL = "https://raw.githubusercontent.com/"
         const val WORD_LIST_URL =
-            "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words"
+            "https://raw.githubusercontent.com/raun/Scrabble/master/words.txt"
     }
 }

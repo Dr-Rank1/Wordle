@@ -9,16 +9,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lexiguess.app.data.repository.PlayerPreferences
 import com.lexiguess.app.ui.audio.SoundManager
 import com.lexiguess.app.ui.theme.ALL_BOARD_THEMES
+import com.lexiguess.app.ui.theme.TileCorrect
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,15 +29,15 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     playerPreferences: PlayerPreferences,
     soundManager: SoundManager,
+    themePref: String = "SYSTEM",
     darkMode: Boolean,
-    onToggleDarkMode: (Boolean) -> Unit,
+    onThemeChange: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val soundEnabled by playerPreferences.soundEnabledFlow.collectAsState(initial = true)
     val hapticsEnabled by playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
     val hardMode by playerPreferences.hardModeFlow.collectAsState(initial = false)
-    val selectedTheme by playerPreferences.themeFlow.collectAsState(initial = if (darkMode) "DARK" else "LIGHT")
     val tiltParallaxEnabled by playerPreferences.tiltParallaxFlow.collectAsState(initial = true)
 
     Scaffold(
@@ -148,35 +151,63 @@ fun SettingsScreen(
 
             // Theme Section
             Text(
-                text = "APPEARANCE",
+                text = "APPEARANCE & THEME",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.5.sp,
             )
 
+            Text(
+                text = "Display Mode",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            // 3-Way Mode Selector: System, Light, Dark
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                    Text("Dark Mode", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(
-                        "High contrast dark slate theme",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = darkMode,
-                    onCheckedChange = { checked ->
-                        onToggleDarkMode(checked)
-                        coroutineScope.launch {
-                            playerPreferences.setTheme(if (checked) "DARK" else "LIGHT")
-                        }
-                    },
+                val modes = listOf(
+                    Triple("SYSTEM", "System", Icons.Outlined.PhoneAndroid),
+                    Triple("LIGHT", "Light", Icons.Outlined.LightMode),
+                    Triple("DARK", "Dark", Icons.Outlined.DarkMode),
                 )
+
+                modes.forEach { (modeId, label, icon) ->
+                    val isSelected = themePref == modeId
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = if (isSelected) BorderStroke(2.dp, TileCorrect) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                onThemeChange(modeId)
+                                coroutineScope.launch { playerPreferences.setTheme(modeId) }
+                            },
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 14.dp, horizontal = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = label,
+                                tint = if (isSelected) TileCorrect else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp),
+                            )
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
+                                color = if (isSelected) TileCorrect else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
             }
 
             // 3D Tilt Parallax Switch
@@ -256,33 +287,117 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
-            // Dictionary Information Card
+            // ==========================================
+            // LEGAL & COMPLIANCE
+            // ==========================================
+            Text(
+                text = "LEGAL & COMPLIANCE",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 1.5.sp,
+            )
+
+            // Trademark Disclaimer Card
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = null,
+                            tint = TileCorrect,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = "TRADEMARK DISCLAIMER",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                     Text(
-                        text = "OFFLINE DICTIONARY STATUS",
+                        text = "Wordle is a registered trademark of The New York Times Company. LexiGuess is an independent game and is not affiliated with, sponsored by, authorized by, or endorsed by The New York Times Company.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp,
+                    )
+                }
+            }
+
+            // Privacy Policy Card
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Shield,
+                            contentDescription = null,
+                            tint = TileCorrect,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = "PRIVACY & ON-DEVICE STORAGE",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Text(
+                        text = "LexiGuess does not collect, track, sell, or transmit any personal identifiable information (PII). All user statistics, streaks, and game progress are stored locally on your device in an encrypted Room SQLite database. Network calls are only used for anonymous dictionary definitions.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp,
+                    )
+                }
+            }
+
+            // Offline Dictionary & Origins Card
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "OFFLINE LEXICON ENGINE",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "Loaded 2,315 curated targets and 12,972 valid guess words across 4, 5, 6, and 7-letter lengths.",
+                        text = "15,287 offline English words loaded across 4, 5, 6, and 7-letter dictionaries. Gameplay mechanics inspired by classic deductive word games Jotto (1955) and Mastermind (1970).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "LexiGuess v2.0 · Offline & Online Hybrid",
+                text = "LexiGuess v2.0 · Open Source & Privacy First",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.padding(bottom = 16.dp),
             )
         }
     }

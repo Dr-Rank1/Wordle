@@ -58,8 +58,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val coroutineScope = rememberCoroutineScope()
-            val themePref by playerPreferences.themeFlow.collectAsState(initial = "DARK")
-            val darkMode = themePref == "DARK"
+            val themePref by playerPreferences.themeFlow.collectAsState(initial = "SYSTEM")
+            val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            val darkMode = when (themePref) {
+                "LIGHT" -> false
+                "DARK" -> true
+                else -> isSystemDark
+            }
             val currentBoardThemeId by playerPreferences.boardThemeFlow.collectAsState(initial = "EMERALD")
             val currentTileMaterial by playerPreferences.tileMaterialFlow.collectAsState(initial = "CLASSIC")
             val tiltParallaxEnabled by playerPreferences.tiltParallaxFlow.collectAsState(initial = true)
@@ -82,10 +87,11 @@ class MainActivity : ComponentActivity() {
                     gameEngine = gameEngine,
                     soundManager = soundManager,
                     questRepository = questRepository,
+                    themePref = themePref,
                     darkMode = darkMode,
-                    onDarkModeChange = { newDark ->
+                    onThemeChange = { newTheme ->
                         coroutineScope.launch {
-                            playerPreferences.setTheme(if (newDark) "DARK" else "LIGHT")
+                            playerPreferences.setTheme(newTheme)
                         }
                     },
                 )

@@ -531,10 +531,13 @@ private fun SplitKey(
     val cornerRadius = 6.dp
     val shape = RoundedCornerShape(cornerRadius)
 
+    val darkMode = LocalDarkMode.current
+    val baseLipColor = if (darkMode) Color(0xFF15191C) else Color(0xFFB0B4BA)
+
     Box(
         modifier = modifier
             .height(44.dp)
-            .background(Color(0xFF15191C), shape = shape)
+            .background(baseLipColor, shape = shape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
