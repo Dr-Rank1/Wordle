@@ -43,6 +43,8 @@ fun HomeScreen(
     onNavigateToQuests: () -> Unit = {},
     onNavigateToCosmetics: () -> Unit = {},
     onNavigateToPassAndPlay: () -> Unit = {},
+    wonDates: Set<String> = emptySet(),
+    onStartArchiveDaily: ((java.time.LocalDate) -> Unit)? = null,
 ) {
     val xp by playerPreferences.xpFlow.collectAsState(initial = 0)
     val rushHighScore by playerPreferences.rushHighScoreFlow.collectAsState(initial = 0)
@@ -236,7 +238,7 @@ fun HomeScreen(
         ) {
             ModeCard(
                 title = "Timed Rush",
-                subtitle = "60s · High Score: $rushHighScore",
+                subtitle = "120s Blitz · High Score: $rushHighScore",
                 icon = Icons.Outlined.Timer,
                 modifier = Modifier.weight(1f),
                 onClick = onStartRush,
@@ -403,6 +405,8 @@ fun HomeScreen(
             currentStreak = currentStreak,
             maxStreak = if (bestStreak > 0) bestStreak else currentStreak,
             streakFreezes = streakFreezes,
+            wonDates = wonDates,
+            onPlayArchiveDate = onStartArchiveDaily,
             onDismiss = { showStreakCalendar = false },
         )
     }

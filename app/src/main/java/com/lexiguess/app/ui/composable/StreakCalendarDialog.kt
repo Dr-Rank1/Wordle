@@ -2,6 +2,7 @@ package com.lexiguess.app.ui.composable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Whatshot
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +32,8 @@ fun StreakCalendarDialog(
     currentStreak: Int,
     maxStreak: Int,
     streakFreezes: Int,
+    wonDates: Set<String> = emptySet(),
+    onPlayArchiveDate: ((LocalDate) -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     val today = remember { LocalDate.now() }
@@ -164,7 +168,7 @@ fun StreakCalendarDialog(
                             for (day in 1..7) {
                                 val daysAgo = 27 - ((week * 7) + (day - 1))
                                 val targetDate = today.minusDays(daysAgo.toLong())
-                                val isPlayed = daysAgo < currentStreak
+                                val isPlayed = wonDates.contains(targetDate.toString())
                                 val isToday = daysAgo == 0
 
                                 Box(
@@ -180,15 +184,23 @@ fun StreakCalendarDialog(
                                         )
                                         .border(
                                             width = if (isToday) 2.dp else 1.dp,
-                                            color = if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                            color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                                             shape = CircleShape,
+                                        )
+                                        .then(
+                                            if (onPlayArchiveDate != null) {
+                                                Modifier.clickable {
+                                                    onDismiss()
+                                                    onPlayArchiveDate(targetDate)
+                                                }
+                                            } else Modifier
                                         ),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     if (isPlayed) {
                                         Icon(
                                             imageVector = Icons.Default.Check,
-                                            contentDescription = null,
+                                            contentDescription = "Solved on $targetDate",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp),
                                         )
@@ -197,12 +209,23 @@ fun StreakCalendarDialog(
                                             text = "${targetDate.dayOfMonth}",
                                             fontSize = 11.sp,
                                             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                            color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                         )
                                     }
                                 }
                             }
                         }
+                    }
+
+                    if (onPlayArchiveDate != null) {
+                        Text(
+                            text = "Tap any day to play its Daily Archive puzzle",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
 

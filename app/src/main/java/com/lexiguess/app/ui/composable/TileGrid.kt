@@ -1,15 +1,21 @@
 package com.lexiguess.app.ui.composable
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -19,6 +25,7 @@ import com.lexiguess.app.domain.model.GameState
 import com.lexiguess.app.domain.model.GameState.Companion.MAX_ROWS
 import com.lexiguess.app.domain.model.TileState
 import com.lexiguess.app.ui.theme.*
+import com.lexiguess.app.ui.util.rememberDeviceTilt
 import kotlinx.coroutines.delay
 
 /**
@@ -55,26 +62,44 @@ fun TileGrid(
     }
     val fontSize = if (maxRows > 6) (baseFontSize.value * 0.9f).sp else baseFontSize
 
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    val tilt = rememberDeviceTilt()
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (darkMode) Color(0xFF13171F).copy(alpha = 0.70f) else Color(0xFFF1F5F9).copy(alpha = 0.85f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (darkMode) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f),
+        ),
+        modifier = modifier
+            .graphicsLayer {
+                rotationX = tilt.rotationX
+                rotationY = tilt.rotationY
+                cameraDistance = 18f * density
+            }
+            .padding(horizontal = 4.dp),
     ) {
-        for (row in 0 until maxRows) {
-            TileRow(
-                row = row,
-                letters = state.boardLetters[row],
-                tileStates = state.board[row],
-                wordLength = wordLength,
-                tileSize = tileSize,
-                fontSize = fontSize,
-                isCurrentRow = row == state.currentRow,
-                isSubmitted = row < state.currentRow,
-                shake = state.shake && row == state.currentRow,
-                inputLength = if (row == state.currentRow) state.currentInput.length else 0,
-                onTileFlipSound = onTileFlipSound,
-                darkMode = darkMode,
-            )
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            for (row in 0 until maxRows) {
+                TileRow(
+                    row = row,
+                    letters = state.boardLetters[row],
+                    tileStates = state.board[row],
+                    wordLength = wordLength,
+                    tileSize = tileSize,
+                    fontSize = fontSize,
+                    isCurrentRow = row == state.currentRow,
+                    isSubmitted = row < state.currentRow,
+                    shake = state.shake && row == state.currentRow,
+                    inputLength = if (row == state.currentRow) state.currentInput.length else 0,
+                    onTileFlipSound = onTileFlipSound,
+                    darkMode = darkMode,
+                )
+            }
         }
     }
 }
@@ -192,16 +217,18 @@ private fun TileCell(
         (1f - flipProgress.value) * 180f
     }
 
+    val boardTheme = LocalBoardTheme.current
+
     val bgColor = if (isBackSide) {
-        tileState.toBackground(darkMode)
+        tileState.toBackground(darkMode, boardTheme)
     } else {
-        tileState.toPreRevealBackground(darkMode)
+        tileState.toPreRevealBackground(darkMode, boardTheme)
     }
 
     val textColor = if (isBackSide) {
         Color.White
     } else {
-        tileState.toTextColor(darkMode)
+        tileState.toTextColor(darkMode, boardTheme)
     }
 
     val material = LocalTileMaterial.current
@@ -224,23 +251,88 @@ private fun TileCell(
             Color(0xFF455A64).copy(alpha = 0.5f)
         }
         isBackSide -> Color.Transparent
-        else -> tileState.toBorder(darkMode)
+        else -> tileState.toBorder(darkMode, boardTheme)
     }
+
+    val isEmptySlot = letter == ' ' && !isSubmitted
+
+    // 3D Air-lift and dynamic lighting during flip
+    val lift = kotlin.math.sin(flipProgress.value * Math.PI.toFloat())
+    val airLiftScale = 1.0f + (lift * 0.12f)
+    val dynamicDarkening = lift * 0.35f
+
+    val baseElevation = when {
+        isBackSide -> 3f
+        letter != ' ' -> 2f
+        else -> 0f
+    }
+    val dynamicElevation = baseElevation + (10f * lift) + (if (bloomAlpha.value > 0.3f) 8f * bloomAlpha.value else 0f)
+
+    val spotColor = when {
+        isBackSide && tileState == TileState.CORRECT -> boardTheme.correctColor.copy(alpha = 0.65f)
+        isBackSide && tileState == TileState.MISPLACED -> boardTheme.misplacedColor.copy(alpha = 0.65f)
+        else -> Color.Black.copy(alpha = 0.40f)
+    }
+
+    val emptyWellBg = if (darkMode) Color(0xFF0C0E13).copy(alpha = 0.55f) else Color(0xFFE2E8F0).copy(alpha = 0.55f)
+    val cellBgColor = if (isEmptySlot) emptyWellBg else bgColor
 
     Box(
         modifier = Modifier
             .size(tileSize)
             .graphicsLayer {
                 rotationX = rotationXDegrees
-                cameraDistance = 14f * density
-                scaleX = popScale.value
-                scaleY = popScale.value
-                if (isBackSide && tileState == TileState.CORRECT && bloomAlpha.value > 0.3f) {
-                    shadowElevation = 8f * bloomAlpha.value
-                }
+                cameraDistance = 16f * density
+                scaleX = popScale.value * airLiftScale
+                scaleY = popScale.value * airLiftScale
+                shadowElevation = dynamicElevation * density
+                shape = cornerShape
+                clip = false
+                spotShadowColor = spotColor
+                ambientShadowColor = Color.Black.copy(alpha = 0.25f)
             }
             .clip(cornerShape)
-            .background(bgColor)
+            .background(cellBgColor)
+            .drawWithContent {
+                drawContent()
+                val cornerRadiusPx = 8f
+
+                if (isEmptySlot) {
+                    // Sunken recessed slot top shadow
+                    drawLine(
+                        color = Color.Black.copy(alpha = if (darkMode) 0.35f else 0.16f),
+                        start = Offset(cornerRadiusPx, 1.5f),
+                        end = Offset(size.width - cornerRadiusPx, 1.5f),
+                        strokeWidth = 2.5f,
+                        cap = StrokeCap.Round,
+                    )
+                } else {
+                    // Top specular highlight line (beveled edge reflection)
+                    drawLine(
+                        color = Color.White.copy(alpha = if (isBackSide) 0.32f else (if (darkMode) 0.20f else 0.45f)),
+                        start = Offset(cornerRadiusPx, 1.5f),
+                        end = Offset(size.width - cornerRadiusPx, 1.5f),
+                        strokeWidth = 2f,
+                        cap = StrokeCap.Round,
+                    )
+                    // Bottom extrusion lip line (3D extruded block bevel)
+                    drawLine(
+                        color = Color.Black.copy(alpha = if (isBackSide) 0.38f else (if (darkMode) 0.32f else 0.18f)),
+                        start = Offset(cornerRadiusPx, size.height - 1.5f),
+                        end = Offset(size.width - cornerRadiusPx, size.height - 1.5f),
+                        strokeWidth = 3f,
+                        cap = StrokeCap.Round,
+                    )
+                }
+
+                // Dynamic angular light falloff scrim during 3D flip
+                if (dynamicDarkening > 0.01f) {
+                    drawRect(
+                        color = Color.Black.copy(alpha = dynamicDarkening),
+                        size = size,
+                    )
+                }
+            }
             .border(
                 width = if (isBackSide && (tileState == TileState.CORRECT || material == "GOLDEN")) 2.5.dp else 2.dp,
                 color = finalBorderColor,
@@ -259,23 +351,23 @@ private fun TileCell(
     }
 }
 
-private fun TileState.toBackground(dark: Boolean): Color = when (this) {
-    TileState.CORRECT -> TileCorrect
-    TileState.MISPLACED -> if (dark) TileMisplacedDark else TileMisplaced
-    TileState.ABSENT -> if (dark) TileAbsentDark else TileAbsent
-    TileState.FILLED, TileState.EMPTY -> if (dark) BackgroundDark else BackgroundLight
+private fun TileState.toBackground(dark: Boolean, theme: BoardTheme): Color = when (this) {
+    TileState.CORRECT -> theme.correctColor
+    TileState.MISPLACED -> theme.misplacedColor
+    TileState.ABSENT -> theme.absentColor
+    TileState.FILLED, TileState.EMPTY -> if (dark) theme.backgroundColor else BackgroundLight
 }
 
-private fun TileState.toPreRevealBackground(dark: Boolean): Color =
-    if (dark) BackgroundDark else BackgroundLight
+private fun TileState.toPreRevealBackground(dark: Boolean, theme: BoardTheme): Color =
+    if (dark) theme.backgroundColor else BackgroundLight
 
-private fun TileState.toTextColor(dark: Boolean): Color = when (this) {
+private fun TileState.toTextColor(dark: Boolean, theme: BoardTheme): Color = when (this) {
     TileState.CORRECT, TileState.MISPLACED, TileState.ABSENT -> Color.White
-    TileState.FILLED, TileState.EMPTY -> if (dark) KeyTextDark else KeyText
+    TileState.FILLED, TileState.EMPTY -> if (dark) theme.onSurfaceColor else KeyText
 }
 
-private fun TileState.toBorder(dark: Boolean): Color = when (this) {
-    TileState.EMPTY -> if (dark) TileBorderEmptyDark else TileBorderEmpty
-    TileState.FILLED -> if (dark) TileBorderFilledDark else TileBorderFilled
+private fun TileState.toBorder(dark: Boolean, theme: BoardTheme): Color = when (this) {
+    TileState.EMPTY -> if (dark) theme.tileBorder else TileBorderEmpty
+    TileState.FILLED -> if (dark) theme.tileBorder else TileBorderFilled
     TileState.CORRECT, TileState.MISPLACED, TileState.ABSENT -> Color.Transparent
 }

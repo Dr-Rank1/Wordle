@@ -15,11 +15,15 @@ val LocalBoardTheme = staticCompositionLocalOf { EmeraldTheme }
 /** Composition local so any composable can read the active Tile Material. */
 val LocalTileMaterial = staticCompositionLocalOf { "CLASSIC" }
 
+/** Composition local so any composable can check if 3D tilt parallax is enabled. */
+val LocalTiltParallaxEnabled = staticCompositionLocalOf { true }
+
 @Composable
 fun LexiGuessTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     boardTheme: BoardTheme = EmeraldTheme,
     tileMaterial: String = "CLASSIC",
+    tiltParallaxEnabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) {
@@ -50,6 +54,7 @@ fun LexiGuessTheme(
         LocalDarkMode provides darkTheme,
         LocalBoardTheme provides boardTheme,
         LocalTileMaterial provides tileMaterial,
+        LocalTiltParallaxEnabled provides tiltParallaxEnabled,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

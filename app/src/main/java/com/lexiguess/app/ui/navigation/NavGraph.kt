@@ -67,6 +67,7 @@ fun LexiGuessNavGraph(
     multiBoardEngine: MultiBoardEngine,
     gameEngine: GameEngine,
     soundManager: SoundManager,
+    questRepository: com.lexiguess.app.data.repository.QuestRepository,
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
 ) {
@@ -74,6 +75,7 @@ fun LexiGuessNavGraph(
     val gameViewModel: GameViewModel = hiltViewModel()
 
     val currentStreak by gameRepository.currentStreakFlow.collectAsState(initial = 0)
+    val wonDatesList by gameRepository.wonDatesFlow.collectAsState(initial = emptyList())
     var bestStreak by remember { mutableIntStateOf(0) }
     LaunchedEffect(currentStreak) {
         bestStreak = gameRepository.bestStreak()
@@ -144,6 +146,11 @@ fun LexiGuessNavGraph(
                     playerPreferences = playerPreferences,
                     currentStreak = currentStreak,
                     bestStreak = bestStreak,
+                    wonDates = wonDatesList.toSet(),
+                    onStartArchiveDaily = { date ->
+                        gameViewModel.startDailyGame(epochDay = date.toEpochDay(), date = date.toString())
+                        navController.navigate(Routes.GAME)
+                    },
                     onStartDaily = {
                         gameViewModel.startDailyGame()
                         navController.navigate(Routes.GAME)
@@ -221,6 +228,8 @@ fun LexiGuessNavGraph(
                     soundManager = soundManager,
                     playerPreferences = playerPreferences,
                     vaultDao = vaultDao,
+                    questRepository = questRepository,
+                    achievementDao = achievementDao,
                     onBack = { navController.popBackStack() },
                 )
             }

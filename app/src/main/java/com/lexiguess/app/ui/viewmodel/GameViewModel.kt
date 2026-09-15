@@ -60,6 +60,7 @@ class GameViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             wordRepository.initialize()
+            gameRepository.checkAndApplyStreakShield(playerPreferences)
             val soundPref = playerPreferences.soundEnabledFlow.first()
             soundManager.isEnabled = soundPref
             val hardModePref = playerPreferences.hardModeFlow.first()
@@ -77,12 +78,15 @@ class GameViewModel @Inject constructor(
     // Mode Launchers
     // -------------------------------------------------------------------------
 
-    fun startDailyGame() {
+    fun startDailyGame(epochDay: Long = LocalDate.now().toEpochDay(), date: String? = null) {
         cancelRushTimer()
         _guessAnalysisSteps.value = emptyList()
         viewModelScope.launch {
-            val target = wordRepository.dailyWord(5)
-            gameRepository.startNewGame(target)
+            val target = wordRepository.dailyWord(5, epochDay)
+            val isToday = date == null || date == LocalDate.now().toString()
+            if (isToday) {
+                gameRepository.startNewGame(target)
+            }
             roundStartTimeMs = System.currentTimeMillis()
             _state.value = GameState(
                 gameMode = GameMode.DAILY,
@@ -441,7 +445,8 @@ class GameViewModel @Inject constructor(
         val remaining = if (won) 1 else engine.countRemainingCandidates(previousEvals, len)
 
         val prevCandidates = if (_guessAnalysisSteps.value.isEmpty()) {
-            wordRepository.getValidWordsSet(len).size
+            val targetCount = wordRepository.getTargetWordsCount(len)
+            if (targetCount > 0) targetCount else wordRepository.getValidWordsSet(len).size
         } else {
             _guessAnalysisSteps.value.last().remainingCandidates
         }
@@ -759,6 +764,8 @@ class GameViewModel @Inject constructor(
                     won -> GameStatus.WON
                     lost -> GameStatus.LOST
                     else -> GameStatus.IN_PROGRESS
+                },
+            )
         }
         if (tempState.status != GameStatus.IN_PROGRESS) {
             tempState = tempState.copy(showGameOverSheet = true)

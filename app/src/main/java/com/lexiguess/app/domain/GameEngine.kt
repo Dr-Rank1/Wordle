@@ -61,6 +61,16 @@ class GameEngine(
     }
 
     /**
+     * Returns the total count of target solution words for a given word length.
+     */
+    fun getTargetWordsCount(expectedLength: Int = DEFAULT_WORD_LENGTH): Int {
+        val pool = multiLengthTargets[expectedLength] ?: (if (expectedLength == DEFAULT_WORD_LENGTH) targetWords else emptyList())
+        if (pool.isNotEmpty()) return pool.size
+        val validPool = multiLengthValid[expectedLength] ?: (if (expectedLength == DEFAULT_WORD_LENGTH) validWordsSet else emptySet())
+        return validPool.size
+    }
+
+    /**
      * Evaluates [guess] against [target] and returns a list of [TileState] values.
      */
     fun evaluate(guess: String, target: String): List<TileState> {

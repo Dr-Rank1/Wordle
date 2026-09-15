@@ -1,17 +1,22 @@
 package com.lexiguess.app.ui.composable
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Backspace
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -128,6 +133,64 @@ fun WordleKeyboard(
 }
 
 @Composable
+private fun TactileKeyContainer(
+    modifier: Modifier = Modifier,
+    baseColor: Color,
+    onClick: () -> Unit,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressOffsetY by animateDpAsState(
+        targetValue = if (isPressed) 3.5.dp else 0.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessHigh, dampingRatio = Spring.DampingRatioNoBouncy),
+        label = "keyPress"
+    )
+
+    val cornerRadius = 6.dp
+    val shape = RoundedCornerShape(cornerRadius)
+    val darkerLip = remember(baseColor) { baseColor.darken(0.38f) }
+
+    Box(
+        modifier = modifier
+            .height(54.dp)
+            .background(darkerLip, shape = shape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (isPressed) 54.dp else 50.5.dp)
+                .offset(y = pressOffsetY)
+                .clip(shape)
+                .background(baseColor)
+                .drawWithContent {
+                    drawContent()
+                    drawLine(
+                        color = Color.White.copy(alpha = if (isPressed) 0.08f else 0.22f),
+                        start = Offset(cornerRadius.toPx(), 1.dp.toPx()),
+                        end = Offset(size.width - cornerRadius.toPx(), 1.dp.toPx()),
+                        strokeWidth = 1.5.dp.toPx()
+                    )
+                },
+            contentAlignment = Alignment.Center,
+            content = content,
+        )
+    }
+}
+
+private fun Color.darken(factor: Float = 0.35f): Color = Color(
+    red = (red * (1f - factor)).coerceIn(0f, 1f),
+    green = (green * (1f - factor)).coerceIn(0f, 1f),
+    blue = (blue * (1f - factor)).coerceIn(0f, 1f),
+    alpha = alpha,
+)
+
+@Composable
 private fun LetterKey(
     char: Char,
     tileState: TileState,
@@ -135,16 +198,14 @@ private fun LetterKey(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val bg = tileState.toKeyBackground(darkMode)
-    val textColor = tileState.toKeyText(darkMode)
+    val boardTheme = LocalBoardTheme.current
+    val bg = tileState.toKeyBackground(darkMode, boardTheme)
+    val textColor = tileState.toKeyText(darkMode, boardTheme)
 
-    Box(
-        modifier = modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(bg)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+    TactileKeyContainer(
+        modifier = modifier,
+        baseColor = bg,
+        onClick = onClick,
     ) {
         Text(
             text = char.toString(),
@@ -162,19 +223,20 @@ private fun ActionKey(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(if (darkMode) KeyDefaultDark else KeyDefault)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+    val boardTheme = LocalBoardTheme.current
+    val bg = if (darkMode) boardTheme.keyDefault else KeyDefault
+    val textColor = if (darkMode) boardTheme.keyText else KeyText
+
+    TactileKeyContainer(
+        modifier = modifier,
+        baseColor = bg,
+        onClick = onClick,
     ) {
         Text(
             text = label,
             fontSize = 12.sp,
             fontWeight = FontWeight.Black,
-            color = if (darkMode) KeyTextDark else KeyText,
+            color = textColor,
         )
     }
 }
@@ -185,18 +247,19 @@ private fun ActionIconKey(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(if (darkMode) KeyDefaultDark else KeyDefault)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+    val boardTheme = LocalBoardTheme.current
+    val bg = if (darkMode) boardTheme.keyDefault else KeyDefault
+    val iconColor = if (darkMode) boardTheme.keyText else KeyText
+
+    TactileKeyContainer(
+        modifier = modifier,
+        baseColor = bg,
+        onClick = onClick,
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.Backspace,
             contentDescription = "Backspace",
-            tint = if (darkMode) KeyTextDark else KeyText,
+            tint = iconColor,
             modifier = Modifier.size(20.dp),
         )
     }
@@ -206,14 +269,14 @@ private fun ActionIconKey(
 // Colour helpers
 // -------------------------------------------------------------------------
 
-private fun TileState.toKeyBackground(dark: Boolean): Color = when (this) {
-    TileState.CORRECT -> TileCorrect
-    TileState.MISPLACED -> if (dark) TileMisplacedDark else TileMisplaced
-    TileState.ABSENT -> if (dark) TileAbsentDark else TileAbsent
-    else -> if (dark) KeyDefaultDark else KeyDefault
+private fun TileState.toKeyBackground(dark: Boolean, theme: BoardTheme): Color = when (this) {
+    TileState.CORRECT -> theme.correctColor
+    TileState.MISPLACED -> theme.misplacedColor
+    TileState.ABSENT -> theme.absentColor
+    else -> if (dark) theme.keyDefault else KeyDefault
 }
 
-private fun TileState.toKeyText(dark: Boolean): Color = when (this) {
+private fun TileState.toKeyText(dark: Boolean, theme: BoardTheme): Color = when (this) {
     TileState.CORRECT, TileState.MISPLACED, TileState.ABSENT -> Color.White
-    else -> if (dark) KeyTextDark else KeyText
+    else -> if (dark) theme.keyText else KeyText
 }

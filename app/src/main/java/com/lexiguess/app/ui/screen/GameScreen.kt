@@ -14,7 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +29,7 @@ import com.lexiguess.app.ui.composable.*
 import com.lexiguess.app.ui.theme.TileCorrect
 import com.lexiguess.app.ui.theme.TileMisplaced
 import com.lexiguess.app.ui.viewmodel.GameViewModel
+import android.view.KeyEvent as AndroidKeyEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,10 +42,43 @@ fun GameScreen(
     val particleEffect by viewModel.playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
     val hapticsEnabled by viewModel.playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
 
-    var showDuelDialog by remember { mutableStateOf(false) }
-    var duelWordInput by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable()
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.key) {
+                        Key.Enter, Key.NumPadEnter -> {
+                            viewModel.onEnter()
+                            true
+                        }
+                        Key.Backspace -> {
+                            viewModel.onBackspace()
+                            true
+                        }
+                        else -> {
+                            val nativeCode = keyEvent.nativeKeyEvent.keyCode
+                            if (nativeCode in AndroidKeyEvent.KEYCODE_A..AndroidKeyEvent.KEYCODE_Z) {
+                                val char = ('A' + (nativeCode - AndroidKeyEvent.KEYCODE_A))
+                                viewModel.onKey(char)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    }
+                } else {
+                    false
+                }
+            }
+    ) {
 
         Scaffold(
             topBar = {
@@ -271,7 +309,7 @@ fun GameScreen(
         // Win Confetti Particle Engine
         ConfettiParticleEngine(
             trigger = state.showConfetti,
-            paletteName = particleEffect,
+            particleEffect = particleEffect,
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(10f),

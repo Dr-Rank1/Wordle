@@ -109,8 +109,8 @@ class GameEngineTest {
         val prev = listOf(
             Pair("ENTER", listOf(TileState.CORRECT, TileState.ABSENT, TileState.ABSENT, TileState.MISPLACED, TileState.ABSENT))
         )
-        // Guess with only 1 'E' violates hard mode
-        val err = engine.validateHardMode("EAGLE", prev)
+        // Guess with only 1 'E' violates hard mode (starts with E, but only 1 E)
+        val err = engine.validateHardMode("ELBOW", prev)
         assertNotNull(err)
         assertTrue(err!!.contains("Guess must contain at least 2 'E's"))
     }

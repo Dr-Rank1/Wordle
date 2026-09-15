@@ -122,7 +122,7 @@ fun GameOverSheet(
             // Attempts stat
             if (won) {
                 Text(
-                    text = "Solved in ${state.currentRow} of 6 attempts",
+                    text = "Solved in ${state.currentRow} of ${state.maxAttempts} attempts",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,

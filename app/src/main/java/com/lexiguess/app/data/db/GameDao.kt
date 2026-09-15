@@ -24,40 +24,19 @@ interface GameDao {
     @Query("SELECT COUNT(*) FROM game_records WHERE won = 1")
     suspend fun totalWins(): Int
 
-    /**
-     * Returns the current win streak: the number of consecutive won games
-     * ending at the most recent record.
-     */
-    @Query(
-        """
-        SELECT COUNT(*) FROM game_records
-        WHERE id >= (
-            SELECT COALESCE(MAX(id), 0) FROM game_records WHERE won = 0
-        )
-        AND won = 1
-        """
-    )
-    suspend fun currentStreak(): Int
+    /** Distinct dates won, sorted descending. */
+    @Query("SELECT DISTINCT datePlayed FROM game_records WHERE won = 1 ORDER BY datePlayed DESC")
+    suspend fun getWonDates(): List<String>
 
-    /** Maximum streak ever achieved. */
-    @Query(
-        """
-        SELECT COALESCE(MAX(streak), 0) FROM (
-            SELECT COUNT(*) as streak
-            FROM game_records
-            WHERE won = 1
-            GROUP BY (id - (SELECT COUNT(*) FROM game_records g2 WHERE g2.won = 0 AND g2.id <= game_records.id))
-        )
-        """
-    )
-    suspend fun bestStreak(): Int
+    @Query("SELECT DISTINCT datePlayed FROM game_records WHERE won = 1 ORDER BY datePlayed DESC")
+    fun getWonDatesFlow(): Flow<List<String>>
 
     /**
      * Distribution of guess counts for won games.
      * Returns a map of attempt count (1-6) → number of wins with that count.
      */
     @Query(
-        "SELECT attempts, COUNT(*) as count FROM game_records WHERE won = 1 GROUP BY attempts"
+        "SELECT attempts, COUNT(*) as count FROM game_records WHERE won = 1 AND attempts BETWEEN 1 AND 6 GROUP BY attempts"
     )
     suspend fun guessDistribution(): List<GuessDistributionRow>
 

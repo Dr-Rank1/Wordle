@@ -29,6 +29,7 @@ class PlayerPreferences @Inject constructor(
     val lastPlayedDateFlow: Flow<String?> = dataStore.data.map { it[KEY_LAST_PLAYED_DATE] }
     val tileMaterialFlow: Flow<String> = dataStore.data.map { it[KEY_TILE_MATERIAL] ?: "CLASSIC" }
     val particleEffectFlow: Flow<String> = dataStore.data.map { it[KEY_PARTICLE_EFFECT] ?: "CONFETTI" }
+    val tiltParallaxFlow: Flow<Boolean> = dataStore.data.map { it[KEY_TILT_PARALLAX] ?: true }
 
     suspend fun addXp(amount: Int) {
         dataStore.edit {
@@ -63,6 +64,10 @@ class PlayerPreferences @Inject constructor(
 
     suspend fun setParticleEffect(effect: String) {
         dataStore.edit { it[KEY_PARTICLE_EFFECT] = effect }
+    }
+
+    suspend fun setTiltParallaxEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_TILT_PARALLAX] = enabled }
     }
 
     suspend fun addStreakFreeze(count: Int = 1) {
@@ -107,6 +112,7 @@ class PlayerPreferences @Inject constructor(
         private val KEY_LAST_PLAYED_DATE = stringPreferencesKey("pref_last_played_date")
         private val KEY_TILE_MATERIAL = stringPreferencesKey("pref_tile_material")
         private val KEY_PARTICLE_EFFECT = stringPreferencesKey("pref_particle_effect")
+        private val KEY_TILT_PARALLAX = booleanPreferencesKey("pref_tilt_parallax")
 
         fun calculateLevel(xp: Int): Int = (xp / 400) + 1
         fun calculateProgressInLevel(xp: Int): Float = (xp % 400).toFloat() / 400f

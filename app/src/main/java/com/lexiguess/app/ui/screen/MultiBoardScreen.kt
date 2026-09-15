@@ -1,9 +1,12 @@
 package com.lexiguess.app.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,13 +19,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lexiguess.app.data.db.AchievementDao
 import com.lexiguess.app.data.db.VaultDao
 import com.lexiguess.app.data.db.VaultWordRecord
 import com.lexiguess.app.data.repository.PlayerPreferences
+import com.lexiguess.app.data.repository.QuestRepository
 import com.lexiguess.app.data.repository.WordRepository
 import com.lexiguess.app.domain.MultiBoardEngine
 import com.lexiguess.app.domain.model.*
@@ -39,6 +47,8 @@ fun MultiBoardScreen(
     soundManager: SoundManager,
     playerPreferences: PlayerPreferences,
     vaultDao: VaultDao? = null,
+    questRepository: QuestRepository? = null,
+    achievementDao: AchievementDao? = null,
     onBack: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -51,12 +61,13 @@ fun MultiBoardScreen(
         playerPreferences.soundEnabledFlow.collect { soundEnabled = it }
     }
 
-    // Function to start a fresh match
+    // Function to start a fresh match with guaranteed distinct target words
     val startMatch: (MultiBoardMode) -> Unit = { mode ->
-        val targets = (1..mode.boardCount).map {
-            wordRepository.randomWord(5)
+        val targets = mutableSetOf<String>()
+        while (targets.size < mode.boardCount) {
+            targets.add(wordRepository.randomWord(5))
         }
-        gameState = multiBoardEngine.startNewGame(mode, targets)
+        gameState = multiBoardEngine.startNewGame(mode, targets.toList())
     }
 
     LaunchedEffect(selectedMode) {
@@ -246,6 +257,12 @@ fun MultiBoardScreen(
                         if (newState.status == GameStatus.WON) {
                             coroutineScope.launch {
                                 playerPreferences.addXp(if (state.mode == MultiBoardMode.DORDLE) 120 else 250)
+                                questRepository?.onPuzzleSolved(
+                                    wordLength = state.wordLength,
+                                    attempts = newState.currentRow,
+                                    mode = state.mode.name,
+                                    solveDurationSeconds = 0L,
+                                )
                                 vaultDao?.let { dao ->
                                     newState.boards.forEach { b ->
                                         val existing = dao.getWord(b.targetWord)
@@ -362,10 +379,11 @@ private fun MiniTile(
     state: TileState,
     modifier: Modifier = Modifier,
 ) {
+    val boardTheme = LocalBoardTheme.current
     val bgColor = when (state) {
-        TileState.CORRECT -> TileCorrect
-        TileState.MISPLACED -> TileMisplaced
-        TileState.ABSENT -> TileAbsentDark
+        TileState.CORRECT -> boardTheme.correctColor
+        TileState.MISPLACED -> boardTheme.misplacedColor
+        TileState.ABSENT -> boardTheme.absentColor
         TileState.FILLED -> MaterialTheme.colorScheme.surface
         TileState.EMPTY -> MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
     }
@@ -380,6 +398,27 @@ private fun MiniTile(
             .aspectRatio(1f)
             .clip(RoundedCornerShape(4.dp))
             .background(bgColor)
+            .drawWithContent {
+                drawContent()
+                if (state != TileState.EMPTY || letter != ' ') {
+                    // Top specular highlight line
+                    drawLine(
+                        color = Color.White.copy(alpha = 0.28f),
+                        start = Offset(4f, 1f),
+                        end = Offset(size.width - 4f, 1f),
+                        strokeWidth = 1.5f,
+                        cap = StrokeCap.Round,
+                    )
+                    // Bottom lip extrusion shadow line
+                    drawLine(
+                        color = Color.Black.copy(alpha = 0.35f),
+                        start = Offset(4f, size.height - 1f),
+                        end = Offset(size.width - 4f, size.height - 1f),
+                        strokeWidth = 2f,
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
             .border(
                 width = 1.dp,
                 color = if (state == TileState.FILLED) TileBorderFilledDark else TileBorderEmptyDark.copy(alpha = 0.3f),
@@ -480,54 +519,79 @@ private fun SplitKey(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val boardTheme = LocalBoardTheme.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressOffsetY by animateDpAsState(
+        targetValue = if (isPressed) 2.5.dp else 0.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessHigh, dampingRatio = Spring.DampingRatioNoBouncy),
+        label = "splitKeyPress"
+    )
+
+    val cornerRadius = 6.dp
+    val shape = RoundedCornerShape(cornerRadius)
+
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+            .height(44.dp)
+            .background(Color(0xFF15191C), shape = shape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
     ) {
-        if (states.size == 2) {
-            // Dordle: 2 halves
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(colorForTileState(states[0]))
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(colorForTileState(states[1]))
-                )
-            }
-        } else {
-            // Quordle: 4 quadrants
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(modifier = Modifier.weight(1f)) {
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[0])))
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[1])))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (isPressed) 44.dp else 41.dp)
+                .offset(y = pressOffsetY)
+                .clip(shape),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (states.size == 2) {
+                // Dordle: 2 halves
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(colorForTileState(states[0], boardTheme))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(colorForTileState(states[1], boardTheme))
+                    )
                 }
-                Row(modifier = Modifier.weight(1f)) {
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[2])))
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[3])))
+            } else {
+                // Quordle: 4 quadrants
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(modifier = Modifier.weight(1f)) {
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[0], boardTheme)))
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[1], boardTheme)))
+                    }
+                    Row(modifier = Modifier.weight(1f)) {
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[2], boardTheme)))
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[3], boardTheme)))
+                    }
                 }
             }
-        }
 
-        Text(
-            text = letter.toString(),
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp,
-            color = Color.White,
-        )
+            Text(
+                text = letter.toString(),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = Color.White,
+            )
+        }
     }
 }
 
-private fun colorForTileState(state: TileState): Color = when (state) {
-    TileState.CORRECT -> TileCorrect
-    TileState.MISPLACED -> TileMisplaced
-    TileState.ABSENT -> TileAbsentDark
-    else -> KeyDefaultDark
+private fun colorForTileState(state: TileState, theme: BoardTheme): Color = when (state) {
+    TileState.CORRECT -> theme.correctColor
+    TileState.MISPLACED -> theme.misplacedColor
+    TileState.ABSENT -> theme.absentColor
+    else -> theme.keyDefault
 }

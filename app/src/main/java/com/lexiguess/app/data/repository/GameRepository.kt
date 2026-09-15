@@ -106,11 +106,80 @@ class GameRepository @Inject constructor(
 
     suspend fun totalWins(): Int = gameDao.totalWins()
 
-    suspend fun currentStreak(): Int = gameDao.currentStreak()
+    suspend fun getWonDates(): List<String> = gameDao.getWonDates()
 
-    val currentStreakFlow: Flow<Int> = gameDao.getAllGames().map { gameDao.currentStreak() }
+    val wonDatesFlow: Flow<List<String>> = gameDao.getWonDatesFlow()
 
-    suspend fun bestStreak(): Int = gameDao.bestStreak()
+    suspend fun currentStreak(): Int {
+        val wonDates = gameDao.getWonDates()
+            .mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() }
+            .toSet()
+        if (wonDates.isEmpty()) return 0
+        val today = LocalDate.now()
+        var checkDate = when {
+            wonDates.contains(today) -> today
+            wonDates.contains(today.minusDays(1)) -> today.minusDays(1)
+            else -> return 0
+        }
+        var streak = 0
+        while (wonDates.contains(checkDate)) {
+            streak++
+            checkDate = checkDate.minusDays(1)
+        }
+        return streak
+    }
+
+    val currentStreakFlow: Flow<Int> = gameDao.getAllGames().map { currentStreak() }
+
+    suspend fun bestStreak(): Int {
+        val wonDates = gameDao.getWonDates()
+            .mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() }
+            .distinct()
+            .sorted()
+        if (wonDates.isEmpty()) return 0
+        var maxStreak = 1
+        var current = 1
+        for (i in 1 until wonDates.size) {
+            if (wonDates[i] == wonDates[i - 1].plusDays(1)) {
+                current++
+                if (current > maxStreak) maxStreak = current
+            } else if (wonDates[i] != wonDates[i - 1]) {
+                current = 1
+            }
+        }
+        return maxStreak
+    }
+
+    suspend fun checkAndApplyStreakShield(playerPreferences: PlayerPreferences): Boolean {
+        val wonDates = gameDao.getWonDates()
+            .mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() }
+            .toSet()
+        if (wonDates.isEmpty()) return false
+        val today = LocalDate.now()
+        if (wonDates.contains(today) || wonDates.contains(today.minusDays(1))) {
+            return false
+        }
+        if (wonDates.contains(today.minusDays(2))) {
+            val freezes = playerPreferences.streakFreezesFlow.first()
+            if (freezes > 0) {
+                val used = playerPreferences.consumeStreakFreeze()
+                if (used) {
+                    val yesterday = today.minusDays(1).toString()
+                    gameDao.insertGame(
+                        GameRecord(
+                            datePlayed = yesterday,
+                            targetWord = "SHIELD",
+                            won = true,
+                            attempts = 0,
+                            guesses = "SHIELD",
+                        )
+                    )
+                    return true
+                }
+            }
+        }
+        return false
+    }
 
     suspend fun guessDistribution(): Map<Int, Int> =
         gameDao.guessDistribution().associate { it.attempts to it.count }

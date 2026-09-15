@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.lexiguess.app.domain.model.GameMode
 import com.lexiguess.app.domain.model.GameState
 import com.lexiguess.app.domain.model.GameState.Companion.MAX_ROWS
 import com.lexiguess.app.domain.model.GameStatus
@@ -56,7 +57,15 @@ fun ShareButton(
 
 private fun buildShareText(state: GameState): String {
     val attemptsLabel = if (state.status == GameStatus.WON) "${state.currentRow}" else "X"
-    val header = "LexiGuess $attemptsLabel/$MAX_ROWS (${state.wordLength} Letters)"
+    val hardModeStar = if (state.hardMode) "*" else ""
+    val modeName = when (state.gameMode) {
+        GameMode.DAILY -> "Daily"
+        GameMode.PRACTICE -> "Practice"
+        GameMode.LEVEL -> "Level ${state.campaignLevel ?: ""}"
+        GameMode.TIMED_RUSH -> "Rush"
+        GameMode.DUEL -> "Duel"
+    }
+    val header = "LexiGuess $modeName $attemptsLabel/${state.maxAttempts}$hardModeStar (${state.wordLength} Letters)"
 
     val rows = (0 until state.currentRow).joinToString("\n") { row ->
         (0 until state.wordLength).joinToString("") { col ->

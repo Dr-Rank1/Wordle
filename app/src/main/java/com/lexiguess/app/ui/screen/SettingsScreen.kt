@@ -35,6 +35,7 @@ fun SettingsScreen(
     val hapticsEnabled by playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
     val hardMode by playerPreferences.hardModeFlow.collectAsState(initial = false)
     val selectedTheme by playerPreferences.themeFlow.collectAsState(initial = if (darkMode) "DARK" else "LIGHT")
+    val tiltParallaxEnabled by playerPreferences.tiltParallaxFlow.collectAsState(initial = true)
 
     Scaffold(
         topBar = {
@@ -173,6 +174,30 @@ fun SettingsScreen(
                         onToggleDarkMode(checked)
                         coroutineScope.launch {
                             playerPreferences.setTheme(if (checked) "DARK" else "LIGHT")
+                        }
+                    },
+                )
+            }
+
+            // 3D Tilt Parallax Switch
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text("3D Tilt Parallax", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Subtle holographic perspective tilt on the game board as you angle your phone.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = tiltParallaxEnabled,
+                    onCheckedChange = { checked ->
+                        coroutineScope.launch {
+                            playerPreferences.setTiltParallaxEnabled(checked)
                         }
                     },
                 )
