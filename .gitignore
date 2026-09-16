@@ -1,27 +1,57 @@
-# Gradle
-.gradle/
-build/
+# Built application files
+*.apk
+*.aar
+*.aab
+*.ap_
+*.dex
+
+# Files for the ART/Dalvik VM
 *.class
 
-# IntelliJ / Android Studio
+# Java heap dumps and crash logs
+hs_err_pid*
+replay_pid*
+
+# Gradle build cache & intermediate directories
+.gradle/
+build/
+app/build/
+**/build/
+
+# Kotlin compiler caches & sessions
+.kotlin/
+*.kotlin_module
+
+# Android Studio / IntelliJ IDEA
 .idea/
 *.iml
+*.ipr
+*.iws
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration file (SDK path, etc.)
 local.properties
 
-# Build outputs
-app/build/
-*.apk
-*.aab
-*.aar
+# Signing credentials & keystores
+*.keystore
+*.jks
+release.keystore
+secrets.properties
 
-# Logs
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files and scratch dumps
 *.log
 build_output.txt
 build_full.txt
 checklog.txt
-
-.gradle/
-build/
-app/build/
-local.properties
-release.keystore
