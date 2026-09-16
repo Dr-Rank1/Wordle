@@ -24,3 +24,4 @@ checklog.txt
 build/
 app/build/
 local.properties
+release.keystore
