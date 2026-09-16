@@ -7,14 +7,14 @@ plugins {
 }
 
 android {
-    compileSdk = 34
+    compileSdk = 36
     namespace = "com.rank.lexi"
 
     defaultConfig {
         applicationId = "com.rank.lexi"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
+        targetSdk = 36
+        versionCode = 2
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,6 +37,9 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
     }
 
