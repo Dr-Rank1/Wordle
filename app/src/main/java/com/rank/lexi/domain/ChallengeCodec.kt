@@ -25,7 +25,7 @@ object ChallengeCodec {
     fun encode(word: String, maxAttempts: Int = 6): String {
         val clean = word.trim().uppercase()
         require(clean.all { it in 'A'..'Z' }) { "Word must contain only English letters A-Z" }
-        require(clean.length in 3..8) { "Word length must be between 3 and 8 characters" }
+        require(clean.length in 4..7) { "Word length must be between 4 and 7 characters" }
 
         val bytes = ByteArray(clean.length + 1)
         bytes[0] = ((clean.length shl 4) or (maxAttempts and 0x0F)).toByte()
@@ -61,7 +61,7 @@ object ChallengeCodec {
             val expectedLength = (header shr 4) and 0x0F
             val maxAttempts = header and 0x0F
 
-            if (bytes.size - 1 != expectedLength || expectedLength !in 3..8) {
+            if (bytes.size - 1 != expectedLength || expectedLength !in 4..7) {
                 return null
             }
 

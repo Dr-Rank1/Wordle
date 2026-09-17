@@ -92,7 +92,7 @@ class QuestRepository @Inject constructor(
             QuestRecord(
                 id = "${todayKey}_q1",
                 dateKey = todayKey,
-                title = "Word Hunter",
+                title = "Two puzzles",
                 description = "Solve 2 puzzles in any game mode",
                 questType = "SOLVE_ANY",
                 targetCount = 2,
@@ -101,7 +101,7 @@ class QuestRepository @Inject constructor(
             QuestRecord(
                 id = "${todayKey}_q2",
                 dateKey = todayKey,
-                title = "Sharpshooter",
+                title = "Four guesses",
                 description = "Solve a puzzle in 4 guesses or fewer",
                 questType = "FEW_GUESSES",
                 targetCount = 1,
@@ -110,11 +110,29 @@ class QuestRepository @Inject constructor(
             QuestRecord(
                 id = "${todayKey}_q3",
                 dateKey = todayKey,
-                title = "Lexicon Adventurer",
+                title = "Longer words",
                 description = "Solve a 6-letter or 7-letter word puzzle",
                 questType = "LONG_WORD",
                 targetCount = 1,
                 xpReward = 175,
+            ),
+            QuestRecord(
+                id = "${todayKey}_q4",
+                dateKey = todayKey,
+                title = "Under a minute",
+                description = "Solve a puzzle in 60 seconds or less",
+                questType = "SPEED_SOLVE",
+                targetCount = 1,
+                xpReward = 180,
+            ),
+            QuestRecord(
+                id = "${todayKey}_q5",
+                dateKey = todayKey,
+                title = "Several boards",
+                description = "Win a two-board or four-board match",
+                questType = "MULTI_BOARD",
+                targetCount = 1,
+                xpReward = 220,
             ),
         )
     }

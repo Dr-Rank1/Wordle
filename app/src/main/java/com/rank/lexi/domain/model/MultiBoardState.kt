@@ -1,8 +1,8 @@
 package com.rank.lexi.domain.model
 
 enum class MultiBoardMode(val boardCount: Int, val maxAttempts: Int, val title: String) {
-    DORDLE(2, 7, "Dordle (2 Boards)"),
-    QUORDLE(4, 9, "Quordle (4 Boards)"),
+    DORDLE(2, 7, "Two boards"),
+    QUORDLE(4, 9, "Four boards"),
 }
 
 data class SingleBoardState(

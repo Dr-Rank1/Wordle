@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -137,6 +139,7 @@ private fun TactileKeyContainer(
     modifier: Modifier = Modifier,
     baseColor: Color,
     onClick: () -> Unit,
+    contentDescription: String? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -155,10 +158,16 @@ private fun TactileKeyContainer(
         modifier = modifier
             .height(54.dp)
             .background(darkerLip, shape = shape)
+            .semantics {
+                if (contentDescription != null) {
+                    this.contentDescription = contentDescription
+                }
+            }
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick,
+                onClickLabel = contentDescription ?: "Key",
             ),
     ) {
         Box(
@@ -201,11 +210,18 @@ private fun LetterKey(
     val boardTheme = LocalBoardTheme.current
     val bg = tileState.toKeyBackground(darkMode, boardTheme)
     val textColor = tileState.toKeyText(darkMode, boardTheme)
+    val stateHint = when (tileState) {
+        TileState.CORRECT -> ", correct"
+        TileState.MISPLACED -> ", wrong spot"
+        TileState.ABSENT -> ", absent"
+        else -> ""
+    }
 
     TactileKeyContainer(
         modifier = modifier,
         baseColor = bg,
         onClick = onClick,
+        contentDescription = "Letter $char$stateHint",
     ) {
         Text(
             text = char.toString(),
@@ -231,6 +247,7 @@ private fun ActionKey(
         modifier = modifier,
         baseColor = bg,
         onClick = onClick,
+        contentDescription = label,
     ) {
         Text(
             text = label,
@@ -255,6 +272,7 @@ private fun ActionIconKey(
         modifier = modifier,
         baseColor = bg,
         onClick = onClick,
+        contentDescription = "Backspace",
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.Backspace,

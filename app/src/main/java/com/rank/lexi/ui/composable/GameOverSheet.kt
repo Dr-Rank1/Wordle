@@ -1,12 +1,25 @@
 package com.rank.lexi.ui.composable
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.*
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,14 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rank.lexi.domain.model.GameMode
 import com.rank.lexi.domain.model.GameState
 import com.rank.lexi.domain.model.GameStatus
 import com.rank.lexi.ui.theme.TileCorrect
 
-/**
- * Polished modal sheet presented when the game finishes (Won or Lost).
- * Displays word definition, attempts summary, share sheet, and instant "Play Again" button.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameOverSheet(
@@ -51,85 +61,55 @@ fun GameOverSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Headline
             Text(
-                text = if (won) "VICTORY!" else "BETTER LUCK NEXT TIME!",
+                text = if (won) "Nice" else "The word was",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
-                color = if (won) TileCorrect else MaterialTheme.colorScheme.error,
+                color = if (won) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
 
-            // Reveal Word Tiles
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = "THE WORD WAS",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 2.sp,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    for (char in state.targetWord) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(TileCorrect),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = char.toString(),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                            )
-                        }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (char in state.targetWord) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(TileCorrect),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = char.toString(),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
                     }
                 }
             }
 
-            // Word Definition (if fetched)
             if (!state.definition.isNullOrBlank()) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(
+                    Text(
+                        text = state.definition,
                         modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = "DICTIONARY DEFINITION",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = state.definition,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
-            // Attempts stat
             if (won) {
                 Text(
-                    text = "Solved in ${state.currentRow} of ${state.maxAttempts} attempts",
+                    text = "Solved in ${state.currentRow} of ${state.maxAttempts}",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            // Action buttons row for post-game insights
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -142,7 +122,7 @@ fun GameOverSheet(
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(10.dp),
                 ) {
-                    Text("RPG Scorecard", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("Summary")
                 }
                 OutlinedButton(
                     onClick = {
@@ -152,43 +132,37 @@ fun GameOverSheet(
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(10.dp),
                 ) {
-                    Text("Bot Analysis", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("Guesses")
                 }
             }
 
-            Spacer(modifier = Modifier.height(2.dp))
-
-            // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // Play Again (Unlimited Practice)
                 Button(
                     onClick = {
                         onDismiss()
                         onPlayAgain()
                     },
-                    modifier = Modifier.weight(1f).height(50.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = TileCorrect,
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                     ),
                 ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Play Again",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
+                        text = when (state.gameMode) {
+                            GameMode.DAILY -> "Practice"
+                            GameMode.LEVEL -> "Next"
+                            else -> "Play again"
+                        },
                     )
                 }
-
-                // Share Sheet
                 ShareButton(
                     state = state,
-                    modifier = Modifier.weight(1f).height(50.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
                 )
             }
         }

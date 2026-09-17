@@ -40,7 +40,7 @@ fun LevelsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Campaign Levels",
+                        text = "Campaign",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -92,20 +92,33 @@ fun LevelsScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
-                    Text(
-                        text = "Conquer stages across 4 distinct worlds. Earn up to 3 stars per level by solving in fewer attempts.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(14.dp),
-                    )
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "$completedCount / 50 stages cleared",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                        )
+                        val nextBoss = listOf(10, 25, 40, 50).firstOrNull { boss ->
+                            levels.none { it.levelNumber == boss && it.completed }
+                        }
+                        Text(
+                            text = if (nextBoss != null) {
+                                "Next boss: Level $nextBoss. Earn up to 3 stars per level."
+                            } else {
+                                "All bosses defeated. Earn up to 3 stars per level."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
             // World 1: 4 Letters (1-10)
             item {
                 WorldSection(
-                    worldName = "World 1: Fundamentals",
-                    wordLengthDesc = "4-Letter Words",
+                    worldName = "4 letters",
+                    wordLengthDesc = "Levels 1–10",
                     levels = levels.filter { it.levelNumber in 1..10 },
                     allLevels = levels,
                     onSelectLevel = onSelectLevel,
@@ -115,8 +128,8 @@ fun LevelsScreen(
             // World 2: 5 Letters (11-30)
             item {
                 WorldSection(
-                    worldName = "World 2: Classics",
-                    wordLengthDesc = "5-Letter Words",
+                    worldName = "5 letters",
+                    wordLengthDesc = "Levels 11–30",
                     levels = levels.filter { it.levelNumber in 11..30 },
                     allLevels = levels,
                     onSelectLevel = onSelectLevel,
@@ -126,8 +139,8 @@ fun LevelsScreen(
             // World 3: 6 Letters (31-40)
             item {
                 WorldSection(
-                    worldName = "World 3: Expansion",
-                    wordLengthDesc = "6-Letter Words",
+                    worldName = "6 letters",
+                    wordLengthDesc = "Levels 31–40",
                     levels = levels.filter { it.levelNumber in 31..40 },
                     allLevels = levels,
                     onSelectLevel = onSelectLevel,
@@ -137,8 +150,8 @@ fun LevelsScreen(
             // World 4: 7 Letters (41-50)
             item {
                 WorldSection(
-                    worldName = "World 4: Mastermind",
-                    wordLengthDesc = "7-Letter Words",
+                    worldName = "7 letters",
+                    wordLengthDesc = "Levels 41–50",
                     levels = levels.filter { it.levelNumber in 41..50 },
                     allLevels = levels,
                     onSelectLevel = onSelectLevel,
@@ -234,7 +247,7 @@ private fun LevelNode(
             if (isUnlocked) {
                 if (isBoss) {
                     Text(
-                        text = "BOSS",
+                        text = "Boss",
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFFE53935),

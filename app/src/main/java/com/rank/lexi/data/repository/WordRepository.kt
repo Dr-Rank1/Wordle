@@ -8,6 +8,7 @@ import com.rank.lexi.data.db.LevelRecord
 import com.rank.lexi.data.db.VaultDao
 import com.rank.lexi.data.db.VaultWordRecord
 import com.rank.lexi.data.network.WordApiService
+import com.rank.lexi.domain.CampaignSeeds
 import com.rank.lexi.domain.GameEngine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,7 @@ class WordRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             loadAllLocalDictionaries()
             seedCampaignLevelsIfEmpty()
+            repairCampaignWordLengths()
             seedAchievementsIfEmpty()
             refreshFromNetwork()
             initialized = true
@@ -152,39 +154,35 @@ class WordRepository @Inject constructor(
         }
     }
 
+    fun pickDistinctWords(length: Int, count: Int): List<String> =
+        engine.pickDistinctWords(length, count)
+
     private suspend fun seedCampaignLevelsIfEmpty() {
         val count = levelDao.getLevel(1)
         if (count != null) return
 
-        val sample4 = listOf("BIRD", "COLD", "FIRE", "GOLD", "LION", "MOON", "RAIN", "STAR", "WIND", "TREE")
-        val sample5 = listOf(
-            "APPLE", "BEACH", "CHAIR", "DREAM", "EARTH", "FLAME", "GRAPE", "HEART", "IMAGE", "JUICE",
-            "KNIFE", "LEMON", "MAGIC", "NIGHT", "OCEAN", "PIZZA", "QUEEN", "RIVER", "SUGAR", "TIGER"
-        )
-        val sample6 = listOf("BRIDGE", "CASTLE", "DRAGON", "FOREST", "GALAXY", "ISLAND", "JUNGLE", "KNIGHT", "MONKEY", "PLANET")
-        val sample7 = listOf("CHAMPION", "DIAMOND", "FANTASY", "HARMONY", "JOURNEY", "KINGDOM", "MYSTERY", "PHOENIX", "RAINBOW", "VICTORY")
-
-        val levels = mutableListOf<LevelRecord>()
-        var lvl = 1
-
-        // World 1: 4 letters (1-10)
-        for (w in sample4) {
-            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 4, targetWord = w))
+        val levels = CampaignSeeds.allLevels().map { seed ->
+            LevelRecord(
+                levelNumber = seed.levelNumber,
+                wordLength = seed.wordLength,
+                targetWord = seed.targetWord,
+            )
         }
-        // World 2: 5 letters (11-30)
-        for (w in sample5) {
-            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 5, targetWord = w))
-        }
-        // World 3: 6 letters (31-40)
-        for (w in sample6) {
-            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 6, targetWord = w))
-        }
-        // World 4: 7 letters (41-50)
-        for (w in sample7) {
-            levels.add(LevelRecord(levelNumber = lvl++, wordLength = 7, targetWord = w))
-        }
-
         levelDao.insertInitialLevels(levels)
+    }
+
+    private suspend fun repairCampaignWordLengths() {
+        for (seed in CampaignSeeds.allLevels()) {
+            val existing = levelDao.getLevel(seed.levelNumber) ?: continue
+            if (existing.targetWord.length != seed.wordLength || existing.wordLength != seed.wordLength) {
+                levelDao.upsertLevel(
+                    existing.copy(
+                        wordLength = seed.wordLength,
+                        targetWord = seed.targetWord,
+                    )
+                )
+            }
+        }
     }
 
     private suspend fun seedAchievementsIfEmpty() {

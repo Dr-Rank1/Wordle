@@ -44,6 +44,7 @@ data class GameState(
     val bossCurrentHp: Int = 100,
     val bossModifierDescription: String = "",
     val bossTimeLimitSeconds: Int? = null,
+    val bossTimeRemainingSeconds: Int? = null,
 
     // Pass & Play Duel state
     val isDuelMode: Boolean = false,
@@ -55,7 +56,25 @@ data class GameState(
     val duelPlayer2Attempts: Int = 0,
 ) {
     val isPracticeMode: Boolean
-        get() = gameMode == GameMode.PRACTICE
+        get() = gameMode == GameMode.PRACTICE || gameMode == GameMode.CUSTOM
+
+    fun withCurrentInput(input: String): GameState {
+        val newLetters = boardLetters.map { it.toMutableList() }
+        val newTiles = board.map { it.toMutableList() }
+        val row = currentRow
+        if (row in newLetters.indices && row in newTiles.indices) {
+            for (i in 0 until wordLength) {
+                val filled = i < input.length
+                newLetters[row][i] = if (filled) input[i] else ' '
+                newTiles[row][i] = if (filled) TileState.FILLED else TileState.EMPTY
+            }
+        }
+        return copy(
+            currentInput = input,
+            boardLetters = newLetters,
+            board = newTiles,
+        )
+    }
 
     companion object {
         const val MAX_ROWS = 6

@@ -6,4 +6,5 @@ enum class GameMode(val displayName: String) {
     TIMED_RUSH("Timed Rush"),
     LEVEL("Campaign Level"),
     DUEL("Pass & Play Duel"),
+    CUSTOM("Custom Challenge"),
 }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LexiGuess</string>
+    <string name="daily_puzzle">Daily Puzzle</string>
+    <string name="daily_same_word">Same puzzle for everyone · generated on-device</string>
+    <string name="daily_continue">Continue today\'s puzzle</string>
+    <string name="daily_solved">Solved · share your grid</string>
+    <string name="daily_lost">See today\'s word</string>
+    <string name="privacy_on_device">LexiGuess does not collect or share personal information. Stats, streaks, and progress stay on this device. The only optional network call is a dictionary definition after you finish a puzzle.</string>
+    <string name="how_to_play_title">How to play</string>
+    <string name="how_to_play_body">Guess the word in six tries. Green is right place, amber is wrong place, gray is not in the word.</string>
+    <string name="section_solo">Solo</string>
+    <string name="section_together">Together</string>
+    <string name="section_collection">Collection</string>
+    <string name="play_daily">Play Daily</string>
+    <string name="content_desc_letter">Letter %1$s</string>
+    <string name="tile_correct">correct</string>
+    <string name="tile_misplaced">wrong spot</string>
+    <string name="tile_absent">absent</string>
+    <string name="share_result">Share your result</string>
+</resources>

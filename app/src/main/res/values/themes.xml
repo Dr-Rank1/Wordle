@@ -1,8 +1,8 @@
 <resources>
-    <!-- LexiGuess uses a Compose-driven theme; this XML theme is the splash/window theme only. -->
     <style name="Theme.LexiGuess" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 </resources>

@@ -1,35 +1,68 @@
 package com.rank.lexi.ui.screen
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import android.view.KeyEvent as AndroidKeyEvent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.*
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.rank.lexi.domain.model.GameMode
 import com.rank.lexi.domain.model.GameStatus
-import com.rank.lexi.ui.composable.*
-import com.rank.lexi.ui.theme.TileCorrect
-import com.rank.lexi.ui.theme.TileMisplaced
+import com.rank.lexi.ui.composable.BossHealthBar
+import com.rank.lexi.ui.composable.ConfettiParticleEngine
+import com.rank.lexi.ui.composable.GameOverSheet
+import com.rank.lexi.ui.composable.PostGameAnalysisDialog
+import com.rank.lexi.ui.composable.RpgScorecardDialog
+import com.rank.lexi.ui.composable.ShareButton
+import com.rank.lexi.ui.composable.TileGrid
+import com.rank.lexi.ui.composable.WordleKeyboard
 import com.rank.lexi.ui.viewmodel.GameViewModel
-import android.view.KeyEvent as AndroidKeyEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +74,7 @@ fun GameScreen(
     val state by viewModel.state.collectAsState()
     val particleEffect by viewModel.playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
     val hapticsEnabled by viewModel.playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
+    val steps by viewModel.guessAnalysisSteps.collectAsState()
 
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
@@ -79,48 +113,34 @@ fun GameScreen(
                 }
             }
     ) {
-
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 Column {
                     TopAppBar(
                         title = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
+                            Column {
                                 Text(
-                                    text = "LexiGuess",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Black,
-                                )
-
-                                // Game Mode Badge
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = when (state.gameMode) {
-                                        GameMode.TIMED_RUSH -> TileMisplaced.copy(alpha = 0.18f)
-                                        GameMode.LEVEL -> MaterialTheme.colorScheme.primaryContainer
-                                        GameMode.DAILY -> TileCorrect.copy(alpha = 0.15f)
-                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                    text = when (state.gameMode) {
+                                        GameMode.DAILY -> "Daily"
+                                        GameMode.TIMED_RUSH -> "Rush"
+                                        GameMode.LEVEL -> "Level ${state.campaignLevel ?: 1}"
+                                        GameMode.PRACTICE -> "Practice"
+                                        GameMode.DUEL -> "Duel"
+                                        GameMode.CUSTOM -> "Challenge"
                                     },
-                                ) {
+                                    style = MaterialTheme.typography.titleLarge,
+                                )
+                                val subtitle = buildList {
+                                    if (state.gameMode == GameMode.TIMED_RUSH) add("${state.rushTimeRemainingSeconds}s")
+                                    if (state.gameMode == GameMode.PRACTICE) add("${state.wordLength} letters")
+                                    if (state.hardMode) add("Hard")
+                                }.joinToString("  ·  ")
+                                if (subtitle.isNotBlank()) {
                                     Text(
-                                        text = when (state.gameMode) {
-                                            GameMode.DAILY -> "DAILY"
-                                            GameMode.TIMED_RUSH -> "RUSH · ${state.rushTimeRemainingSeconds}s"
-                                            GameMode.LEVEL -> "LEVEL ${state.campaignLevel ?: 1}"
-                                            GameMode.PRACTICE -> "${state.wordLength}L PRACTICE"
-                                            GameMode.DUEL -> "DUEL"
-                                        },
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = when (state.gameMode) {
-                                            GameMode.TIMED_RUSH -> TileMisplaced
-                                            GameMode.DAILY -> TileCorrect
-                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        text = subtitle,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }
@@ -131,8 +151,21 @@ fun GameScreen(
                             }
                         },
                         actions = {
-                            IconButton(onClick = { viewModel.playAgain() }) {
-                                Icon(Icons.Outlined.Refresh, contentDescription = "Restart / Next")
+                            if (state.status == GameStatus.IN_PROGRESS) {
+                                IconButton(
+                                    onClick = viewModel::onHint,
+                                    enabled = !state.hintUsed,
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Lightbulb,
+                                        contentDescription = if (state.hintUsed) "Hint used" else "Hint",
+                                    )
+                                }
+                            }
+                            if (viewModel.canRestartFromToolbar()) {
+                                IconButton(onClick = { viewModel.playAgain() }) {
+                                    Icon(Icons.Outlined.Refresh, contentDescription = "Restart")
+                                }
                             }
                             IconButton(onClick = onNavigateToSettings) {
                                 Icon(Icons.Outlined.Settings, contentDescription = "Settings")
@@ -142,7 +175,7 @@ fun GameScreen(
                             containerColor = MaterialTheme.colorScheme.background,
                         ),
                     )
-                    HorizontalDivider()
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 }
             },
         ) { padding ->
@@ -154,145 +187,108 @@ fun GameScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Boss Encounter Live Bar (if active)
-                if (state.isBossFight) {
-                    BossHealthBar(
-                        bossName = state.bossName,
-                        bossTitle = state.bossTitle,
-                        currentHp = state.bossCurrentHp,
-                        maxHp = state.bossMaxHp,
-                        modifierDescription = state.bossModifierDescription,
-                        timeRemainingSeconds = state.bossTimeLimitSeconds,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (state.isBossFight) {
+                        BossHealthBar(
+                            bossName = state.bossName,
+                            bossTitle = state.bossTitle,
+                            currentHp = state.bossCurrentHp,
+                            maxHp = state.bossMaxHp,
+                            modifierDescription = state.bossModifierDescription,
+                            timeRemainingSeconds = state.bossTimeRemainingSeconds,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
 
-                // Timed Rush Live Bar (if active)
-                if (state.gameMode == GameMode.TIMED_RUSH && state.isRushActive) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+                    if (state.gameMode == GameMode.TIMED_RUSH && state.isRushActive) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Text(
-                                text = "Solved: ${state.rushWordsSolved}",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = "Score: ${state.rushScore}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                color = TileCorrect,
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = "${state.rushWordsSolved} solved",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = "${state.rushScore}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            LinearProgressIndicator(
+                                progress = { (state.rushTimeRemainingSeconds.toFloat() / 120f).coerceIn(0f, 1f) },
+                                modifier = Modifier.fillMaxWidth().height(4.dp),
+                                color = if (state.rushTimeRemainingSeconds < 25) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             )
                         }
-                        LinearProgressIndicator(
-                            progress = { (state.rushTimeRemainingSeconds.toFloat() / 120f).coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth().height(6.dp),
-                            color = if (state.rushTimeRemainingSeconds < 25) MaterialTheme.colorScheme.error else TileCorrect,
-                        )
                     }
-                }
 
-                // Toast notification
-                AnimatedVisibility(
-                    visible = state.message != null,
-                    enter = fadeIn() + slideInVertically(),
-                    exit = fadeOut(),
-                    modifier = Modifier.padding(top = 4.dp),
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.inverseSurface,
-                        shadowElevation = 4.dp,
+                    AnimatedVisibility(
+                        visible = state.message != null,
+                        enter = fadeIn() + slideInVertically(),
+                        exit = fadeOut(),
                     ) {
-                        Text(
-                            text = state.message ?: "",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.inverseOnSurface,
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.inverseSurface,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        ) {
+                            Text(
+                                text = state.message ?: "",
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.inverseOnSurface,
+                            )
+                        }
                     }
                 }
 
-                // Wordle Bot elimination hint
-                if (state.currentRow > 0 && state.status == GameStatus.IN_PROGRESS && state.remainingCandidates > 0) {
-                    Text(
-                        text = "${state.remainingCandidates} possible solutions remaining",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-
-                // Main multi-length Tile Grid
                 TileGrid(
                     state = state,
                     onTileFlipSound = { ts, col -> viewModel.soundManager.playTileFlip(ts, col) },
                     modifier = Modifier
                         .weight(1f, fill = false)
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 8.dp),
                 )
 
-                // Middle Actions
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                ) {
-                    if (state.status == GameStatus.IN_PROGRESS) {
-                        HintButton(
-                            hintUsed = state.hintUsed,
-                            onHint = viewModel::onHint,
-                        )
-                    } else {
+                if (state.status != GameStatus.IN_PROGRESS && !state.showGameOverSheet) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    ) {
                         Button(
                             onClick = { viewModel.playAgain() },
-                            shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = TileCorrect,
-                                contentColor = Color.White,
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
                             ),
-                            modifier = Modifier.height(46.dp),
                         ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (state.gameMode == GameMode.LEVEL) "Next Level" else "Play Again",
-                                fontWeight = FontWeight.Bold,
+                                text = when (state.gameMode) {
+                                    GameMode.LEVEL -> "Next"
+                                    GameMode.DAILY -> "Practice"
+                                    else -> "Play again"
+                                },
                             )
                         }
-
-                        val steps by viewModel.guessAnalysisSteps.collectAsState()
-                        if (steps.isNotEmpty()) {
-                            OutlinedButton(
-                                onClick = { viewModel.showScorecard() },
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.height(46.dp),
-                            ) {
-                                Text("Scorecard", fontWeight = FontWeight.Bold)
-                            }
-                            OutlinedButton(
-                                onClick = { viewModel.showAnalysis() },
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.height(46.dp),
-                            ) {
-                                Text("Analysis", fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        ShareButton(
-                            state = state,
-                            modifier = Modifier.height(46.dp),
-                        )
+                        ShareButton(state = state)
                     }
                 }
 
-                // Keyboard
                 WordleKeyboard(
                     keyStates = state.keyStates,
                     onKey = viewModel::onKey,
@@ -306,7 +302,6 @@ fun GameScreen(
             }
         }
 
-        // Win Confetti Particle Engine
         ConfettiParticleEngine(
             trigger = state.showConfetti,
             particleEffect = particleEffect,
@@ -315,8 +310,6 @@ fun GameScreen(
                 .zIndex(10f),
         )
 
-        // Post Game Analysis Dialog
-        val steps by viewModel.guessAnalysisSteps.collectAsState()
         if (state.showAnalysisDialog) {
             PostGameAnalysisDialog(
                 targetWord = state.targetWord,
@@ -325,7 +318,6 @@ fun GameScreen(
             )
         }
 
-        // RPG Performance Scorecard Dialog
         if (state.showScorecardDialog) {
             RpgScorecardDialog(
                 targetWord = state.targetWord,
@@ -338,7 +330,6 @@ fun GameScreen(
             )
         }
 
-        // Game Over Bottom Sheet with Word Definition & Play Again
         GameOverSheet(
             state = state,
             onPlayAgain = { viewModel.playAgain() },

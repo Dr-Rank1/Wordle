@@ -38,9 +38,7 @@
 # DataStore
 -keepclassmembers class * extends androidx.datastore.preferences.core.Preferences { *; }
 
-# Jetpack Compose
--keep class androidx.compose.** { *; }
--dontwarn androidx.compose.**
+# Jetpack Compose — rely on AAR consumer ProGuard rules.
 
 # Procedural AudioTrack
 -keepclassmembers class com.rank.lexi.ui.audio.SoundManager {

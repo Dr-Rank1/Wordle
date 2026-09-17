@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rank.lexi.data.repository.PlayerPreferences
+import com.rank.lexi.ui.theme.ALL_BOARD_THEMES
 import com.rank.lexi.ui.theme.TileCorrect
 import com.rank.lexi.ui.theme.TileMisplaced
 import kotlinx.coroutines.launch
@@ -72,6 +73,7 @@ fun CosmeticsScreen(
 
     val currentMaterial by playerPreferences.tileMaterialFlow.collectAsState(initial = "CLASSIC")
     val currentParticle by playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
+    val currentBoardThemeId by playerPreferences.boardThemeFlow.collectAsState(initial = "EMERALD")
 
     Scaffold(
         topBar = {
@@ -79,12 +81,11 @@ fun CosmeticsScreen(
                 title = {
                     Column {
                         Text(
-                            text = "COSMETICS STUDIO",
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp,
+                            text = "Appearance",
+                            fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = "Materials, Borders & Shaders",
+                            text = "Colors, tiles, win animation",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -124,14 +125,7 @@ fun CosmeticsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "PLAYER MASTERY",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = TileCorrect,
-                                letterSpacing = 1.sp,
-                            )
-                            Text(
-                                text = "Level $playerLevel Wordsmith",
+                                text = "Level $playerLevel",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
                             )
@@ -152,6 +146,44 @@ fun CosmeticsScreen(
                 }
             }
 
+            item {
+                Text(
+                    text = "Colors",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.2.sp,
+                )
+            }
+
+            items(ALL_BOARD_THEMES.size) { index ->
+                val theme = ALL_BOARD_THEMES[index]
+                val isEquipped = currentBoardThemeId == theme.id
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        coroutineScope.launch { playerPreferences.setBoardTheme(theme.id) }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    border = if (isEquipped) androidx.compose.foundation.BorderStroke(2.dp, theme.correctColor) else null,
+                ) {
+                    Row(
+                        Modifier.padding(14.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(theme.name, fontWeight = FontWeight.Bold)
+                            Text(theme.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(Modifier.size(16.dp).clip(CircleShape).background(theme.correctColor))
+                            Box(Modifier.size(16.dp).clip(CircleShape).background(theme.misplacedColor))
+                            Box(Modifier.size(16.dp).clip(CircleShape).background(theme.absentColor))
+                        }
+                    }
+                }
+            }
+
             // Section 1: Tile Materials
             item {
                 Row(
@@ -165,7 +197,7 @@ fun CosmeticsScreen(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        text = "TILE MATERIALS",
+                        text = "Tiles",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary,
@@ -293,7 +325,7 @@ fun CosmeticsScreen(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        text = "VICTORY PARTICLE SHADERS",
+                        text = "Win animation",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = TileMisplaced,

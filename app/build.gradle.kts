@@ -6,6 +6,20 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+fun loadLocalProperties(): Map<String, String> {
+    val file = rootProject.file("local.properties")
+    if (!file.exists()) return emptyMap()
+    return file.readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("=") }
+        .associate { line ->
+            val idx = line.indexOf('=')
+            line.substring(0, idx).trim() to line.substring(idx + 1).trim()
+        }
+}
+
+val localProperties = loadLocalProperties()
+
 android {
     compileSdk = 36
     namespace = "com.rank.lexi"
@@ -19,12 +33,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    val releaseStorePath = localProperties["RELEASE_STORE_FILE"]
+    val releaseStore = if (releaseStorePath != null) {
+        rootProject.file(releaseStorePath)
+    } else {
+        rootProject.file("release.keystore")
+    }
+
     signingConfigs {
-        create("release") {
-            storeFile = rootProject.file("release.keystore")
-            storePassword = "lexiguess2026"
-            keyAlias = "lexiguess"
-            keyPassword = "lexiguess2026"
+        if (releaseStore.exists()) {
+            create("release") {
+                storeFile = releaseStore
+                storePassword = localProperties["RELEASE_STORE_PASSWORD"].orEmpty()
+                keyAlias = localProperties["RELEASE_KEY_ALIAS"] ?: "lexiguess"
+                keyPassword = localProperties["RELEASE_KEY_PASSWORD"].orEmpty()
+            }
         }
     }
 
@@ -36,7 +59,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             ndk {
                 debugSymbolLevel = "SYMBOL_TABLE"
             }
@@ -45,6 +68,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // composeOptions block intentionally omitted:

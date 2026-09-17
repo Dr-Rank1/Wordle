@@ -1,12 +1,10 @@
 package com.rank.lexi.ui.composable
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import com.rank.lexi.domain.model.GameState
 import com.rank.lexi.domain.model.GameState.Companion.MAX_ROWS
 import com.rank.lexi.domain.model.TileState
@@ -63,43 +64,36 @@ fun TileGrid(
     val fontSize = if (maxRows > 6) (baseFontSize.value * 0.9f).sp else baseFontSize
 
     val tilt = rememberDeviceTilt()
+    val tiltEnabled = LocalTiltParallaxEnabled.current
 
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = if (darkMode) Color(0xFF13171F).copy(alpha = 0.70f) else Color(0xFFF1F5F9).copy(alpha = 0.85f),
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (darkMode) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f),
-        ),
+    Column(
         modifier = modifier
             .graphicsLayer {
-                rotationX = tilt.rotationX
-                rotationY = tilt.rotationY
-                cameraDistance = 18f * density
+                if (tiltEnabled) {
+                    rotationX = tilt.rotationX
+                    rotationY = tilt.rotationY
+                    cameraDistance = 18f * density
+                }
             }
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            for (row in 0 until maxRows) {
-                TileRow(
-                    row = row,
-                    letters = state.boardLetters[row],
-                    tileStates = state.board[row],
-                    wordLength = wordLength,
-                    tileSize = tileSize,
-                    fontSize = fontSize,
-                    isCurrentRow = row == state.currentRow,
-                    isSubmitted = row < state.currentRow,
-                    shake = state.shake && row == state.currentRow,
-                    inputLength = if (row == state.currentRow) state.currentInput.length else 0,
-                    onTileFlipSound = onTileFlipSound,
-                    darkMode = darkMode,
-                )
-            }
+        for (row in 0 until maxRows) {
+            TileRow(
+                row = row,
+                letters = state.boardLetters[row],
+                tileStates = state.board[row],
+                wordLength = wordLength,
+                tileSize = tileSize,
+                fontSize = fontSize,
+                isCurrentRow = row == state.currentRow,
+                isSubmitted = row < state.currentRow,
+                shake = state.shake && row == state.currentRow,
+                inputLength = if (row == state.currentRow) state.currentInput.length else 0,
+                onTileFlipSound = onTileFlipSound,
+                darkMode = darkMode,
+            )
         }
     }
 }
@@ -191,12 +185,18 @@ private fun TileCell(
         }
     }
 
-    val flipProgress = remember { Animatable(if (isSubmitted) 1f else 0f) }
-    LaunchedEffect(isSubmitted) {
+    val reducedMotion = LocalReducedMotion.current
+    val flipProgress = remember { Animatable(if (isSubmitted || reducedMotion) 1f else 0f) }
+    LaunchedEffect(isSubmitted, reducedMotion) {
         if (isSubmitted && flipProgress.value < 1f) {
-            delay(revealDelayMs)
-            onTileFlipSound?.invoke(tileState, column)
-            flipProgress.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
+            if (reducedMotion) {
+                flipProgress.snapTo(1f)
+                onTileFlipSound?.invoke(tileState, column)
+            } else {
+                delay(revealDelayMs)
+                onTileFlipSound?.invoke(tileState, column)
+                flipProgress.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
+            }
         }
     }
 
@@ -257,7 +257,7 @@ private fun TileCell(
     val isEmptySlot = letter == ' ' && !isSubmitted
 
     // 3D Air-lift and dynamic lighting during flip
-    val lift = kotlin.math.sin(flipProgress.value * Math.PI.toFloat())
+    val lift = if (reducedMotion) 0f else kotlin.math.sin(flipProgress.value * Math.PI.toFloat())
     val airLiftScale = 1.0f + (lift * 0.12f)
     val dynamicDarkening = lift * 0.35f
 
@@ -277,9 +277,21 @@ private fun TileCell(
     val emptyWellBg = if (darkMode) Color(0xFF0C0E13).copy(alpha = 0.55f) else Color(0xFFE2E8F0).copy(alpha = 0.55f)
     val cellBgColor = if (isEmptySlot) emptyWellBg else bgColor
 
+    val stateLabel = when {
+        isSubmitted && tileState == TileState.CORRECT -> "correct"
+        isSubmitted && tileState == TileState.MISPLACED -> "wrong spot"
+        isSubmitted && tileState == TileState.ABSENT -> "absent"
+        letter != ' ' -> "filled"
+        else -> "empty"
+    }
+
     Box(
         modifier = Modifier
             .size(tileSize)
+            .semantics {
+                contentDescription = if (letter == ' ') "Empty tile" else "Letter $letter"
+                stateDescription = stateLabel
+            }
             .graphicsLayer {
                 rotationX = rotationXDegrees
                 cameraDistance = 16f * density
@@ -308,13 +320,41 @@ private fun TileCell(
                     )
                 } else {
                     // Top specular highlight line (beveled edge reflection)
+                    val highlight = when (material) {
+                        "GLASS" -> Color.White.copy(alpha = 0.55f)
+                        "GOLDEN" -> Color(0xFFFFF8DC).copy(alpha = 0.7f)
+                        "OBSIDIAN" -> Color.White.copy(alpha = 0.12f)
+                        else -> Color.White.copy(alpha = if (isBackSide) 0.32f else (if (darkMode) 0.20f else 0.45f))
+                    }
                     drawLine(
-                        color = Color.White.copy(alpha = if (isBackSide) 0.32f else (if (darkMode) 0.20f else 0.45f)),
+                        color = highlight,
                         start = Offset(cornerRadiusPx, 1.5f),
                         end = Offset(size.width - cornerRadiusPx, 1.5f),
                         strokeWidth = 2f,
                         cap = StrokeCap.Round,
                     )
+                    if (material == "CARBON") {
+                        val hatch = Color.White.copy(alpha = 0.08f)
+                        var x = -size.height
+                        while (x < size.width) {
+                            drawLine(
+                                color = hatch,
+                                start = Offset(x, 0f),
+                                end = Offset(x + size.height, size.height),
+                                strokeWidth = 2f,
+                            )
+                            x += 8f
+                        }
+                    }
+                    if (material == "GLASS") {
+                        drawRect(Color.White.copy(alpha = 0.10f))
+                    }
+                    if (material == "GOLDEN") {
+                        drawRect(Color(0xFFFFD700).copy(alpha = 0.12f))
+                    }
+                    if (material == "OBSIDIAN") {
+                        drawRect(Color.Black.copy(alpha = 0.18f))
+                    }
                     // Bottom extrusion lip line (3D extruded block bevel)
                     drawLine(
                         color = Color.Black.copy(alpha = if (isBackSide) 0.38f else (if (darkMode) 0.32f else 0.18f)),

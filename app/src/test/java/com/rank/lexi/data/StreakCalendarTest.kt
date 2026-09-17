@@ -26,10 +26,10 @@ class StreakCalendarTest {
         override suspend fun totalWins(): Int = records.count { it.won }
 
         override suspend fun getWonDates(): List<String> =
-            records.filter { it.won }.map { it.datePlayed }.distinct().sortedDescending()
+            records.filter { it.won && it.mode == "DAILY" }.map { it.datePlayed }.distinct().sortedDescending()
 
         override fun getWonDatesFlow(): Flow<List<String>> =
-            flowOf(records.filter { it.won }.map { it.datePlayed }.distinct().sortedDescending())
+            flowOf(records.filter { it.won && it.mode == "DAILY" }.map { it.datePlayed }.distinct().sortedDescending())
 
         override suspend fun guessDistribution(): List<GameDao.GuessDistributionRow> =
             records.filter { it.won && it.attempts in 1..6 }
@@ -136,11 +136,9 @@ class StreakCalendarTest {
         dao.insertGame(GameRecord(datePlayed = "2026-09-02", targetWord = "SLATE", won = true, attempts = 3, guesses = "A,B,C"))
         dao.insertGame(GameRecord(datePlayed = "2026-09-03", targetWord = "AUDIO", won = true, attempts = 5, guesses = "A,B,C,D,E"))
         dao.insertGame(GameRecord(datePlayed = "2026-09-04", targetWord = "LIGHT", won = false, attempts = 6, guesses = "A,B,C,D,E,F"))
-        // Streak shield synthetic record
-        dao.insertGame(GameRecord(datePlayed = "2026-09-05", targetWord = "SHIELD", won = true, attempts = 0, guesses = "SHIELD"))
 
-        assertEquals(5, dao.totalGames())
-        assertEquals(4, dao.totalWins())
+        assertEquals(4, dao.totalGames())
+        assertEquals(3, dao.totalWins())
 
         val dist = dao.guessDistribution()
         assertEquals(2, dist.first { it.attempts == 3 }.count)

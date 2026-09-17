@@ -27,6 +27,13 @@ val BackgroundLight = Color(0xFFFFFFFF)
 val BackgroundDark = Color(0xFF121213)
 val SurfaceLight = Color(0xFFFFFFFF)
 val SurfaceDark = Color(0xFF1A1A1B)
+val SurfaceMutedLight = Color(0xFFF4F5F7)
+val SurfaceMutedDark = Color(0xFF222327)
+val OutlineLight = Color(0xFFD4D6DA)
+val OutlineDark = Color(0xFF3A3A3C)
+val InkLight = Color(0xFF1A1A1B)
+val InkMutedLight = Color(0xFF6B7280)
+val InkMutedDark = Color(0xFF9CA3AF)
 
 // Borders
 val TileBorderEmpty = Color(0xFFD3D6DA)
@@ -70,8 +77,8 @@ val EmeraldTheme = BoardTheme(
 
 val MidnightOledTheme = BoardTheme(
     id = "MIDNIGHT_OLED",
-    name = "Midnight OLED",
-    description = "Pitch black background with neon mint accents",
+    name = "Obsidian Night",
+    description = "Pitch black OLED background with neon mint accents",
     correctColor = Color(0xFF00E676),
     misplacedColor = Color(0xFFFFD600),
     absentColor = Color(0xFF263238),
@@ -85,7 +92,7 @@ val MidnightOledTheme = BoardTheme(
 
 val CyberpunkTheme = BoardTheme(
     id = "CYBERPUNK",
-    name = "Cyberpunk Synth",
+    name = "Cyberpunk Neon",
     description = "Electric neon cyan and hot magenta",
     correctColor = Color(0xFF00E5FF),
     misplacedColor = Color(0xFFFF007F),
@@ -98,34 +105,49 @@ val CyberpunkTheme = BoardTheme(
     keyText = Color(0xFF00E5FF),
 )
 
-val SepiaTheme = BoardTheme(
-    id = "SEPIA",
-    name = "Warm Sepia",
-    description = "Espresso, roasted coffee, and aged parchment",
-    correctColor = Color(0xFF588157),
-    misplacedColor = Color(0xFFDDA15E),
-    absentColor = Color(0xFF4A3E38),
-    backgroundColor = Color(0xFF1F1814),
-    surfaceColor = Color(0xFF2E241E),
-    onSurfaceColor = Color(0xFFF3E9DC),
-    tileBorder = Color(0xFF4A3E38),
-    keyDefault = Color(0xFF5C4D44),
-    keyText = Color(0xFFF3E9DC),
+val RoseGoldTheme = BoardTheme(
+    id = "ROSE_GOLD",
+    name = "Rose Gold",
+    description = "Soft pastel rose, warm amber, and slate",
+    correctColor = Color(0xFFC98474),
+    misplacedColor = Color(0xFFD4A373),
+    absentColor = Color(0xFF4A3F45),
+    backgroundColor = Color(0xFF1A1416),
+    surfaceColor = Color(0xFF261C20),
+    onSurfaceColor = Color(0xFFF7EDE8),
+    tileBorder = Color(0xFF5C4A50),
+    keyDefault = Color(0xFF6B535A),
+    keyText = Color(0xFFF7EDE8),
 )
 
-val SunsetTheme = BoardTheme(
-    id = "SUNSET",
-    name = "Sunset Mirage",
-    description = "Deep dusk purple, coral vermilion, and twilight gold",
-    correctColor = Color(0xFF8338EC),
+val RoyalGoldTheme = BoardTheme(
+    id = "ROYAL_GOLD",
+    name = "Royal Gold",
+    description = "Deep sapphire navy with lustrous imperial gold",
+    correctColor = Color(0xFFD4AF37),
+    misplacedColor = Color(0xFF4FC3F7),
+    absentColor = Color(0xFF1A2744),
+    backgroundColor = Color(0xFF0B1220),
+    surfaceColor = Color(0xFF152238),
+    onSurfaceColor = Color(0xFFFFF6D8),
+    tileBorder = Color(0xFF2A3B63),
+    keyDefault = Color(0xFF24345A),
+    keyText = Color(0xFFFFF6D8),
+)
+
+val SolarFlareTheme = BoardTheme(
+    id = "SOLAR_FLARE",
+    name = "Solar Flare",
+    description = "Radiant solar amber and fiery crimson",
+    correctColor = Color(0xFFFFB703),
     misplacedColor = Color(0xFFFB5607),
-    absentColor = Color(0xFF32293F),
-    backgroundColor = Color(0xFF120E1C),
-    surfaceColor = Color(0xFF1E172E),
-    onSurfaceColor = Color(0xFFFFE5D9),
-    tileBorder = Color(0xFF3E3152),
-    keyDefault = Color(0xFF4A3B60),
-    keyText = Color(0xFFFFE5D9),
+    absentColor = Color(0xFF3D1F12),
+    backgroundColor = Color(0xFF140C08),
+    surfaceColor = Color(0xFF24140E),
+    onSurfaceColor = Color(0xFFFFF3E0),
+    tileBorder = Color(0xFF5C2E18),
+    keyDefault = Color(0xFF6B3A1F),
+    keyText = Color(0xFFFFF3E0),
 )
 
 val HighContrastTheme = BoardTheme(
@@ -147,8 +169,18 @@ val ALL_BOARD_THEMES = listOf(
     EmeraldTheme,
     MidnightOledTheme,
     CyberpunkTheme,
-    SepiaTheme,
-    SunsetTheme,
+    RoseGoldTheme,
+    RoyalGoldTheme,
+    SolarFlareTheme,
     HighContrastTheme,
 )
+
+fun resolveBoardThemeId(id: String): String = when (id) {
+    "SEPIA" -> "ROSE_GOLD"
+    "SUNSET" -> "SOLAR_FLARE"
+    else -> id
+}
+
+fun boardThemeById(id: String): BoardTheme =
+    ALL_BOARD_THEMES.find { it.id == resolveBoardThemeId(id) } ?: EmeraldTheme
 

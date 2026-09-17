@@ -50,7 +50,7 @@ class GameEngine(
         if (guess.length != expectedLength) return false
         val g = guess.lowercase()
         val set = multiLengthValid[expectedLength]
-        return (set != null && set.contains(g)) || validWordsSet.contains(g) || wordList.any { it.equals(g, ignoreCase = true) }
+        return (set != null && set.contains(g)) || validWordsSet.contains(g)
     }
 
     /**
@@ -201,6 +201,26 @@ class GameEngine(
     fun selectRandomWord(length: Int = DEFAULT_WORD_LENGTH): String {
         val pool = multiLengthTargets[length] ?: (if (length == DEFAULT_WORD_LENGTH) targetWords else wordList)
         return pool.randomOrNull()?.uppercase() ?: "CRANE".take(length).padEnd(length, 'A')
+    }
+
+    /** Picks [count] unique target words, with a bounded retry cap. */
+    fun pickDistinctWords(length: Int, count: Int): List<String> {
+        val pool = (multiLengthTargets[length] ?: emptyList())
+            .map { it.uppercase() }
+            .distinct()
+            .shuffled()
+        if (pool.size >= count) return pool.take(count)
+        val result = LinkedHashSet<String>()
+        result.addAll(pool)
+        var guard = 0
+        while (result.size < count && guard++ < 200) {
+            result.add(selectRandomWord(length))
+        }
+        val list = result.toMutableList()
+        while (list.size < count) {
+            list.add(selectRandomWord(length))
+        }
+        return list
     }
 
     /** Returns a hint for the first unrevealed position. */

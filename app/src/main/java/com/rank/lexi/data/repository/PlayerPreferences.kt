@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +31,12 @@ class PlayerPreferences @Inject constructor(
     val tileMaterialFlow: Flow<String> = dataStore.data.map { it[KEY_TILE_MATERIAL] ?: "CLASSIC" }
     val particleEffectFlow: Flow<String> = dataStore.data.map { it[KEY_PARTICLE_EFFECT] ?: "CONFETTI" }
     val tiltParallaxFlow: Flow<Boolean> = dataStore.data.map { it[KEY_TILT_PARALLAX] ?: true }
+    val reducedMotionFlow: Flow<Boolean> = dataStore.data.map { it[KEY_REDUCED_MOTION] ?: false }
+    val hasSeenHowToPlayFlow: Flow<Boolean> = dataStore.data.map { it[KEY_HOW_TO_PLAY] ?: false }
+    val streakShieldDatesFlow: Flow<Set<String>> = dataStore.data.map {
+        it[KEY_STREAK_SHIELD_DATES]?.split(",")?.filter { date -> date.isNotBlank() }?.toSet()
+            ?: emptySet()
+    }
 
     suspend fun addXp(amount: Int) {
         dataStore.edit {
@@ -68,6 +75,32 @@ class PlayerPreferences @Inject constructor(
 
     suspend fun setTiltParallaxEnabled(enabled: Boolean) {
         dataStore.edit { it[KEY_TILT_PARALLAX] = enabled }
+    }
+
+    suspend fun setReducedMotionEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_REDUCED_MOTION] = enabled }
+    }
+
+    suspend fun setHasSeenHowToPlay() {
+        dataStore.edit { it[KEY_HOW_TO_PLAY] = true }
+    }
+
+    suspend fun streakShieldDates(): Set<String> =
+        dataStore.data.map {
+            it[KEY_STREAK_SHIELD_DATES]?.split(",")?.filter { date -> date.isNotBlank() }?.toSet()
+                ?: emptySet()
+        }.first()
+
+    suspend fun addStreakShieldDate(dateKey: String) {
+        dataStore.edit {
+            val existing = it[KEY_STREAK_SHIELD_DATES]
+                ?.split(",")
+                ?.filter { date -> date.isNotBlank() }
+                ?.toMutableSet()
+                ?: mutableSetOf()
+            existing.add(dateKey)
+            it[KEY_STREAK_SHIELD_DATES] = existing.joinToString(",")
+        }
     }
 
     suspend fun addStreakFreeze(count: Int = 1) {
@@ -113,6 +146,9 @@ class PlayerPreferences @Inject constructor(
         private val KEY_TILE_MATERIAL = stringPreferencesKey("pref_tile_material")
         private val KEY_PARTICLE_EFFECT = stringPreferencesKey("pref_particle_effect")
         private val KEY_TILT_PARALLAX = booleanPreferencesKey("pref_tilt_parallax")
+        private val KEY_REDUCED_MOTION = booleanPreferencesKey("pref_reduced_motion")
+        private val KEY_HOW_TO_PLAY = booleanPreferencesKey("pref_how_to_play")
+        private val KEY_STREAK_SHIELD_DATES = stringPreferencesKey("pref_streak_shield_dates")
 
         fun calculateLevel(xp: Int): Int = (xp / 400) + 1
         fun calculateProgressInLevel(xp: Int): Float = (xp % 400).toFloat() / 400f

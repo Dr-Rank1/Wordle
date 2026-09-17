@@ -57,14 +57,14 @@ fun PostGameAnalysisDialog(
                 ) {
                     Column {
                         Text(
-                            text = "GAME ANALYSIS",
+                            text = "Guesses",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = TileCorrect,
                             letterSpacing = 1.5.sp,
                         )
                         Text(
-                            text = "Lexi Bot Breakdown",
+                            text = targetWord,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Black,
                         )

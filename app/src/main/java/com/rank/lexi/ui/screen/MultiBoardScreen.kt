@@ -42,36 +42,18 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MultiBoardScreen(
-    multiBoardEngine: MultiBoardEngine,
-    wordRepository: WordRepository,
+    viewModel: com.rank.lexi.ui.viewmodel.MultiBoardViewModel,
     soundManager: SoundManager,
-    playerPreferences: PlayerPreferences,
-    vaultDao: VaultDao? = null,
-    questRepository: QuestRepository? = null,
-    achievementDao: AchievementDao? = null,
     onBack: () -> Unit,
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    var selectedMode by remember { mutableStateOf(MultiBoardMode.DORDLE) }
-    var gameState by remember { mutableStateOf<MultiBoardState?>(null) }
+    val selectedMode by viewModel.mode.collectAsState()
+    val gameState by viewModel.state.collectAsState()
+    val showEndSheet by viewModel.showEndSheet.collectAsState()
     var soundEnabled by remember { mutableStateOf(true) }
-    val particleEffect by playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
+    val particleEffect by viewModel.playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
 
     LaunchedEffect(Unit) {
-        playerPreferences.soundEnabledFlow.collect { soundEnabled = it }
-    }
-
-    // Function to start a fresh match with guaranteed distinct target words
-    val startMatch: (MultiBoardMode) -> Unit = { mode ->
-        val targets = mutableSetOf<String>()
-        while (targets.size < mode.boardCount) {
-            targets.add(wordRepository.randomWord(5))
-        }
-        gameState = multiBoardEngine.startNewGame(mode, targets.toList())
-    }
-
-    LaunchedEffect(selectedMode) {
-        startMatch(selectedMode)
+        viewModel.playerPreferences.soundEnabledFlow.collect { soundEnabled = it }
     }
 
     val state = gameState ?: return
@@ -79,22 +61,7 @@ fun MultiBoardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "MULTI-BOARD MODE",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = TileCorrect,
-                            letterSpacing = 1.5.sp,
-                        )
-                        Text(
-                            text = state.mode.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
-                        )
-                    }
-                },
+                title = { Text(state.mode.title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -102,15 +69,13 @@ fun MultiBoardScreen(
                 },
                 actions = {
                     // Switch Dordle / Quordle toggle button
-                    TextButton(onClick = {
-                        selectedMode = if (selectedMode == MultiBoardMode.DORDLE) MultiBoardMode.QUORDLE else MultiBoardMode.DORDLE
-                    }) {
+                    TextButton(onClick = { viewModel.toggleMode() }) {
                         Text(
-                            text = if (selectedMode == MultiBoardMode.DORDLE) "Switch to 4 Boards" else "Switch to 2 Boards",
+                            text = if (selectedMode == MultiBoardMode.DORDLE) "Four boards" else "Two boards",
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    IconButton(onClick = { startMatch(selectedMode) }) {
+                    IconButton(onClick = { viewModel.startMatch(selectedMode) }) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Restart")
                     }
                 }
@@ -244,46 +209,18 @@ fun MultiBoardScreen(
                     keyStates = state.keyBoardStates,
                     onLetter = { char ->
                         if (soundEnabled) soundManager.playKeyClick()
-                        gameState = multiBoardEngine.onLetterInput(state, char)
+                        viewModel.onLetter(char)
                     },
                     onDelete = {
                         if (soundEnabled) soundManager.playKeyClick()
-                        gameState = multiBoardEngine.onDelete(state)
+                        viewModel.onDelete()
                     },
                     onSubmit = {
-                        val validSet = wordRepository.getValidWordsSet(state.wordLength)
-                        val newState = multiBoardEngine.submitGuess(state, validSet)
-                        gameState = newState
-                        if (newState.status == GameStatus.WON) {
-                            coroutineScope.launch {
-                                playerPreferences.addXp(if (state.mode == MultiBoardMode.DORDLE) 120 else 250)
-                                questRepository?.onPuzzleSolved(
-                                    wordLength = state.wordLength,
-                                    attempts = newState.currentRow,
-                                    mode = state.mode.name,
-                                    solveDurationSeconds = 0L,
-                                )
-                                vaultDao?.let { dao ->
-                                    newState.boards.forEach { b ->
-                                        val existing = dao.getWord(b.targetWord)
-                                        dao.upsert(
-                                            VaultWordRecord(
-                                                word = b.targetWord,
-                                                length = state.wordLength,
-                                                definition = "Solved in Multi-Board ${state.mode.title}",
-                                                partOfSpeech = "word",
-                                                example = "",
-                                                timesSolved = (existing?.timesSolved ?: 0) + 1,
-                                                bestGuesses = minOf(existing?.bestGuesses ?: 9, b.guesses.size),
-                                                unlockedAt = existing?.unlockedAt ?: System.currentTimeMillis(),
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        if (soundEnabled) {
-                            if (newState.status == GameStatus.WON) {
+                        val previous = state.status
+                        viewModel.onSubmit()
+                        val newState = viewModel.state.value
+                        if (soundEnabled && newState != null) {
+                            if (newState.status == GameStatus.WON && previous != GameStatus.WON) {
                                 soundManager.playVictory()
                             } else if (newState.shake) {
                                 soundManager.playError()
@@ -296,6 +233,34 @@ fun MultiBoardScreen(
             }
 
             ConfettiParticleEngine(trigger = state.showConfetti, particleEffect = particleEffect)
+
+            if (showEndSheet && state.status != GameStatus.IN_PROGRESS) {
+                ModalBottomSheet(onDismissRequest = { viewModel.dismissEndSheet() }) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = if (state.status == GameStatus.WON) "All boards solved" else "Out of attempts",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                        )
+                        state.boards.forEach { board ->
+                            Text(
+                                text = "Board ${board.boardIndex + 1}: ${if (board.isSolved) board.targetWord else "— ${board.targetWord}"}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                        Button(
+                            onClick = { viewModel.startMatch(selectedMode) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                        ) {
+                            Text("Rematch", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -421,7 +386,7 @@ private fun MiniTile(
             }
             .border(
                 width = 1.dp,
-                color = if (state == TileState.FILLED) TileBorderFilledDark else TileBorderEmptyDark.copy(alpha = 0.3f),
+                color = if (state == TileState.FILLED) boardTheme.tileBorder else boardTheme.tileBorder.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(4.dp),
             ),
         contentAlignment = Alignment.Center,

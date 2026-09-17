@@ -1,7 +1,6 @@
 package com.rank.lexi.ui.screen
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,9 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.rank.lexi.data.repository.PlayerPreferences
 import com.rank.lexi.ui.audio.SoundManager
-import com.rank.lexi.ui.theme.ALL_BOARD_THEMES
 import com.rank.lexi.ui.theme.TileCorrect
 import kotlinx.coroutines.launch
 
@@ -32,6 +31,7 @@ fun SettingsScreen(
     themePref: String = "SYSTEM",
     darkMode: Boolean,
     onThemeChange: (String) -> Unit,
+    onNavigateToCosmetics: () -> Unit = {},
     onBack: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -39,6 +39,7 @@ fun SettingsScreen(
     val hapticsEnabled by playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
     val hardMode by playerPreferences.hardModeFlow.collectAsState(initial = false)
     val tiltParallaxEnabled by playerPreferences.tiltParallaxFlow.collectAsState(initial = true)
+    val reducedMotion by playerPreferences.reducedMotionFlow.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -62,11 +63,9 @@ fun SettingsScreen(
         ) {
             // Gameplay Section
             Text(
-                text = "GAMEPLAY",
+                text = "Gameplay",
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             // Hard Mode Switch
@@ -95,11 +94,9 @@ fun SettingsScreen(
 
             // Feedback Section
             Text(
-                text = "AUDIO & HAPTICS",
+                text = "Sound",
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             // Sound Effects Switch
@@ -111,7 +108,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text("Sound Effects", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        "Procedural keystroke clicks and chorded flip arpeggios.",
+                        "Clicks and tile sounds.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -134,7 +131,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text("Vibration Feedback", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        "Tactile haptic pulses when tapping keyboard keys.",
+                        "Light pulse when you tap a key.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -151,11 +148,9 @@ fun SettingsScreen(
 
             // Theme Section
             Text(
-                text = "APPEARANCE & THEME",
+                text = "Look",
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Text(
@@ -219,7 +214,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text("3D Tilt Parallax", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        "Subtle holographic perspective tilt on the game board as you angle your phone.",
+                        "Tilt the board slightly as you move the phone.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -234,55 +229,32 @@ fun SettingsScreen(
                 )
             }
 
-            // Board Theme Palette Selector
-            val currentBoardThemeId by playerPreferences.boardThemeFlow.collectAsState(initial = "EMERALD")
-
-            Text(
-                text = "Color Theme Palette",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ALL_BOARD_THEMES.forEach { theme ->
-                    val isSelected = currentBoardThemeId == theme.id
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        border = if (isSelected) BorderStroke(2.dp, theme.correctColor) else null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                coroutineScope.launch { playerPreferences.setBoardTheme(theme.id) }
-                            },
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                                Text(theme.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                                Text(theme.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-
-                            // Color swatches preview
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Canvas(modifier = Modifier.size(16.dp)) {
-                                    drawCircle(theme.correctColor)
-                                }
-                                Canvas(modifier = Modifier.size(16.dp)) {
-                                    drawCircle(theme.misplacedColor)
-                                }
-                                Canvas(modifier = Modifier.size(16.dp)) {
-                                    drawCircle(theme.backgroundColor)
-                                }
-                            }
-                        }
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text("Reduced motion", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Skip tile flips and win animation.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+                Switch(
+                    checked = reducedMotion,
+                    onCheckedChange = { checked ->
+                        coroutineScope.launch { playerPreferences.setReducedMotionEnabled(checked) }
+                    },
+                )
+            }
+
+            OutlinedButton(
+                onClick = onNavigateToCosmetics,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Colors and tiles")
             }
 
             HorizontalDivider()
@@ -291,7 +263,7 @@ fun SettingsScreen(
             // LEGAL & COMPLIANCE
             // ==========================================
             Text(
-                text = "LEGAL & COMPLIANCE",
+                text = "About",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -320,7 +292,7 @@ fun SettingsScreen(
                             modifier = Modifier.size(18.dp),
                         )
                         Text(
-                            text = "TRADEMARK DISCLAIMER",
+                            text = "Wordle trademark",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -356,13 +328,13 @@ fun SettingsScreen(
                             modifier = Modifier.size(18.dp),
                         )
                         Text(
-                            text = "PRIVACY & ON-DEVICE STORAGE",
+                            text = "Privacy",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                         )
                     }
                     Text(
-                        text = "LexiGuess does not collect, track, sell, or transmit any personal identifiable information (PII). All user statistics, streaks, and game progress are stored locally on your device in an encrypted Room SQLite database. Network calls are only used for anonymous dictionary definitions.",
+                        text = stringResource(com.rank.lexi.R.string.privacy_on_device),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 18.sp,
@@ -378,13 +350,13 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "OFFLINE LEXICON ENGINE",
+                        text = "Dictionary",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "15,287 offline English words loaded across 4, 5, 6, and 7-letter dictionaries. Gameplay mechanics inspired by classic deductive word games Jotto (1955) and Mastermind (1970).",
+                        text = "Offline word lists for 4, 5, 6, and 7 letters. Definitions are fetched only when you finish a puzzle.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -394,7 +366,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "LexiGuess v2.0 · Open Source & Privacy First",
+                text = "LexiGuess v${com.rank.lexi.BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.padding(bottom = 16.dp),

@@ -152,7 +152,7 @@ fun RpgScorecardDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "PERFORMANCE SCORECARD",
+                        text = "Summary",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -244,7 +244,7 @@ fun RpgScorecardDialog(
                 Button(
                     onClick = {
                         val scorecardText = buildString {
-                            appendLine("⚔ LEXIGUESS SCORECARD ⚔")
+                            appendLine("LexiGuess")
                             appendLine("Word: $targetWord")
                             appendLine("Rank: ${rankInfo.rank} (${rankInfo.title})")
                             appendLine("Turns: $attempts / $maxAttempts")

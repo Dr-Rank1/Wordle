@@ -83,14 +83,16 @@ fun PassAndPlayScreen(
     }
 
     fun onKey(char: Char) {
+        if (activeState.status != com.rank.lexi.domain.model.GameStatus.IN_PROGRESS) return
         if (activeState.currentInput.length < 5) {
-            activeState = activeState.copy(currentInput = activeState.currentInput + char)
+            val newInput = activeState.currentInput + char
+            activeState = activeState.withCurrentInput(newInput)
         }
     }
 
     fun onBackspace() {
         if (activeState.currentInput.isNotEmpty()) {
-            activeState = activeState.copy(currentInput = activeState.currentInput.dropLast(1))
+            activeState = activeState.withCurrentInput(activeState.currentInput.dropLast(1))
         }
     }
 
@@ -173,7 +175,7 @@ fun PassAndPlayScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(Icons.Outlined.People, contentDescription = null, tint = TileCorrect)
-                        Text("PASS & PLAY DUEL", fontWeight = FontWeight.Black)
+                        Text("Pass and play")
                     }
                 },
                 navigationIcon = {
@@ -339,7 +341,12 @@ fun PassAndPlayScreen(
                 }
 
                 DuelPhase.MATCH_OVER -> {
-                    ConfettiParticleEngine(trigger = true)
+                    var confettiOn by remember { mutableStateOf(true) }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(3600)
+                        confettiOn = false
+                    }
+                    ConfettiParticleEngine(trigger = confettiOn)
 
                     val winnerText = when {
                         p1Attempts < p2Attempts -> "PLAYER 1 WINS THE DUEL!"
@@ -388,7 +395,7 @@ fun PassAndPlayScreen(
                                 horizontalArrangement = Arrangement.SpaceAround,
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("PLAYER 1", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                                    Text("Player 1", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = if (p1Won) "$p1Attempts guesses" else "Failed",
@@ -405,7 +412,7 @@ fun PassAndPlayScreen(
                                 VerticalDivider(modifier = Modifier.height(50.dp))
 
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("PLAYER 2", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                                    Text("Player 2", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = if (p2Won) "$p2Attempts guesses" else "Failed",

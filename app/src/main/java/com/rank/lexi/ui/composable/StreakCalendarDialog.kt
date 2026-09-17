@@ -33,6 +33,7 @@ fun StreakCalendarDialog(
     maxStreak: Int,
     streakFreezes: Int,
     wonDates: Set<String> = emptySet(),
+    shieldDates: Set<String> = emptySet(),
     onPlayArchiveDate: ((LocalDate) -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
@@ -61,7 +62,7 @@ fun StreakCalendarDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "STREAK CALENDAR",
+                        text = "Streak",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -169,6 +170,7 @@ fun StreakCalendarDialog(
                                 val daysAgo = 27 - ((week * 7) + (day - 1))
                                 val targetDate = today.minusDays(daysAgo.toLong())
                                 val isPlayed = wonDates.contains(targetDate.toString())
+                                val isShielded = shieldDates.contains(targetDate.toString())
                                 val isToday = daysAgo == 0
 
                                 Box(
@@ -178,6 +180,7 @@ fun StreakCalendarDialog(
                                         .background(
                                             when {
                                                 isPlayed -> TileCorrect
+                                                isShielded -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
                                                 isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                                                 else -> MaterialTheme.colorScheme.surface
                                             },
@@ -197,15 +200,20 @@ fun StreakCalendarDialog(
                                         ),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    if (isPlayed) {
-                                        Icon(
+                                    when {
+                                        isPlayed -> Icon(
                                             imageVector = Icons.Default.Check,
-                                            contentDescription = "Solved on $targetDate",
+                                            contentDescription = "Solved on $targetDate. Replay archive.",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp),
                                         )
-                                    } else {
-                                        Text(
+                                        isShielded -> Icon(
+                                            imageVector = Icons.Outlined.Shield,
+                                            contentDescription = "Streak shield on $targetDate",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                        else -> Text(
                                             text = "${targetDate.dayOfMonth}",
                                             fontSize = 11.sp,
                                             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
@@ -219,7 +227,7 @@ fun StreakCalendarDialog(
 
                     if (onPlayArchiveDate != null) {
                         Text(
-                            text = "Tap any day to play its Daily Archive puzzle",
+                            text = "Tap a day to play its archive puzzle. Green days are already solved (replay).",
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium,

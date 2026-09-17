@@ -2,6 +2,8 @@ package com.rank.lexi.data.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.rank.lexi.data.db.AchievementDao
 import com.rank.lexi.data.db.AppDatabase
 import com.rank.lexi.data.db.GameDao
@@ -19,6 +21,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE game_records ADD COLUMN mode TEXT NOT NULL DEFAULT 'DAILY'")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
@@ -26,7 +34,10 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME,
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(MIGRATION_4_5)
+            .fallbackToDestructiveMigrationOnDowngrade()
+            .build()
 
     @Provides
     fun provideGameDao(database: AppDatabase): GameDao = database.gameDao()

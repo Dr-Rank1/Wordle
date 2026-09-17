@@ -18,6 +18,12 @@ interface LevelDao {
     @Query("SELECT COUNT(*) FROM level_records WHERE completed = 1")
     fun getCompletedCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM level_records WHERE completed = 1")
+    suspend fun getCompletedCountOnce(): Int
+
+    @Query("SELECT * FROM level_records WHERE completed = 0 ORDER BY levelNumber ASC LIMIT 1")
+    fun getNextIncompleteLevel(): Flow<LevelRecord?>
+
     @Query("SELECT COALESCE(SUM(stars), 0) FROM level_records")
     fun getTotalStars(): Flow<Int>
 

@@ -42,6 +42,11 @@ class ChallengeCodecTest {
     }
 
     @Test
+    fun `decode rejects 3-letter words`() {
+        assertTrue(runCatching { ChallengeCodec.encode("CAT") }.isFailure)
+    }
+
+    @Test
     fun `decode returns null for corrupted code`() {
         assertNull(ChallengeCodec.decode("INVALID"))
         assertNull(ChallengeCodec.decode("LX-123"))

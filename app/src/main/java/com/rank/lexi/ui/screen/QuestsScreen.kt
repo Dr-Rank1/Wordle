@@ -42,20 +42,7 @@ fun QuestsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "THE GUILD",
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp,
-                        )
-                        Text(
-                            text = "Daily Quests & Bounties",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
+                title = { Text("Quests") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -106,7 +93,7 @@ fun QuestsScreen(
                             icon = Icons.Outlined.EmojiEvents,
                             iconColor = TileCorrect,
                             value = "$totalXp",
-                            label = "Player XP",
+                            label = "XP",
                         )
                     }
                 }
@@ -120,14 +107,14 @@ fun QuestsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "TODAY'S OBJECTIVES",
+                        text = "Today",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 1.sp,
                     )
                     Text(
-                        text = "Resets at Midnight",
+                        text = "Resets at midnight",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -154,13 +141,7 @@ fun QuestsScreen(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Text(
-                            text = "GUILD REWARDS GUIDE",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = "Complete all daily bounties to maximize your account XP and level up. High guild ranks unlock exclusive cosmetic board themes, tile materials, and victory shaders.",
+                            text = "Finish the daily goals to earn XP. Higher levels unlock extra colors and tile styles in Appearance.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp,
@@ -303,12 +284,7 @@ private fun QuestCard(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "CLAIMED",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Text("Claimed", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 quest.isCompleted -> {
@@ -323,12 +299,12 @@ private fun QuestCard(
                             contentColor = Color.White,
                         ),
                     ) {
-                        Text("CLAIM REWARD", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("Claim", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                     }
                 }
                 else -> {
                     Text(
-                        text = "In Progress...",
+                        text = "In progress",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

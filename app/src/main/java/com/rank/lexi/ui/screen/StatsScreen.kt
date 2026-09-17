@@ -31,7 +31,7 @@ fun StatsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Player Dashboard", fontWeight = FontWeight.Bold) },
+                title = { Text("Statistics") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
@@ -69,22 +69,20 @@ fun StatsScreen(
                 ) {
                     Column {
                         Text(
-                            text = state.rankTitle.uppercase(),
+                            text = state.rankTitle,
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = TileCorrect,
-                            letterSpacing = 1.5.sp,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
                             text = "Level ${state.level}",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
 
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "${state.xp} Total XP",
+                            text = "${state.xp} XP",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -94,7 +92,7 @@ fun StatsScreen(
 
             // Daily Stats Summary Row
             Text(
-                text = "DAILY CHALLENGE STATS",
+                text = "Daily",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -116,7 +114,7 @@ fun StatsScreen(
 
             // Mode Records Summary
             Text(
-                text = "MODE RECORDS",
+                text = "Records",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -129,14 +127,14 @@ fun StatsScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 RecordCard(
-                    title = "Timed Rush Best",
+                    title = "Rush best",
                     value = if (state.rushHighScore > 0) "${state.rushHighScore} pts" else "—",
                     accentColor = TileMisplaced,
                     modifier = Modifier.weight(1f),
                 )
                 RecordCard(
-                    title = "Campaign Progress",
-                    value = "${state.completedLevels} / 50 (${state.totalStars} ★)",
+                    title = "Campaign",
+                    value = "${state.completedLevels} / 50  ·  ${state.totalStars} stars",
                     accentColor = TileCorrect,
                     modifier = Modifier.weight(1f),
                 )
@@ -146,7 +144,7 @@ fun StatsScreen(
 
             // Guess Distribution Chart
             Text(
-                text = "GUESS DISTRIBUTION",
+                text = "Guess distribution",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -170,7 +168,7 @@ private fun StatItem(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Black,
+            fontWeight = FontWeight.Bold,
         )
         Text(
             text = label,

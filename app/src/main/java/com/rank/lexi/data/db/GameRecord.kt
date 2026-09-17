@@ -23,4 +23,5 @@ data class GameRecord(
     val attempts: Int,
     val guesses: String,        // "CRANE,BLINK,LIGHT"
     val timestamp: Long = System.currentTimeMillis(),
+    val mode: String = "DAILY",
 )

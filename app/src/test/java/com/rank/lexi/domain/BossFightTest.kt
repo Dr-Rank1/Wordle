@@ -23,7 +23,7 @@ class BossFightTest {
         assertNotNull(boss)
         assertEquals("The Gatekeeper", boss!!.name)
         assertEquals(4, boss.maxGuesses)
-        assertEquals(5, boss.wordLength)
+        assertEquals(4, boss.wordLength)
     }
 
     @Test
@@ -58,11 +58,19 @@ class BossFightTest {
     }
 
     @Test
-    fun `Level 50 The Lexicon Titan enforces 6 letters and Hard Mode`() {
+    fun `Level 50 The Lexicon Titan enforces 7 letters and Hard Mode`() {
         val boss = BossRegistry.getBossForLevel(50)
         assertNotNull(boss)
         assertEquals("The Lexicon Titan", boss!!.name)
-        assertEquals(6, boss.wordLength)
+        assertEquals(7, boss.wordLength)
         assertTrue(boss.enforceHardMode)
+    }
+
+    @Test
+    fun `boss word lengths match campaign worlds`() {
+        assertEquals(CampaignSeeds.expectedWordLength(10), BossRegistry.getBossForLevel(10)!!.wordLength)
+        assertEquals(CampaignSeeds.expectedWordLength(25), BossRegistry.getBossForLevel(25)!!.wordLength)
+        assertEquals(CampaignSeeds.expectedWordLength(40), BossRegistry.getBossForLevel(40)!!.wordLength)
+        assertEquals(CampaignSeeds.expectedWordLength(50), BossRegistry.getBossForLevel(50)!!.wordLength)
     }
 }

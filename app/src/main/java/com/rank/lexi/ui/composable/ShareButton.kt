@@ -10,16 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.rank.lexi.domain.model.GameMode
 import com.rank.lexi.domain.model.GameState
-import com.rank.lexi.domain.model.GameState.Companion.MAX_ROWS
 import com.rank.lexi.domain.model.GameStatus
-import com.rank.lexi.domain.model.TileState
+import com.rank.lexi.ui.util.ShareResult
 
-/**
- * Share button that builds a standard Wordle-style emoji grid and sends it to
- * the Android share sheet. Works across any word length (4, 5, 6, 7).
- */
 @Composable
 fun ShareButton(
     state: GameState,
@@ -31,12 +25,14 @@ fun ShareButton(
 
     Button(
         onClick = {
-            val text = buildShareText(state)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, text)
+            runCatching { ShareResult.share(context, state) }.onFailure {
+                val text = ShareResult.buildShareText(state)
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, text)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share your result"))
             }
-            context.startActivity(Intent.createChooser(intent, "Share your result"))
         },
         shape = RoundedCornerShape(8.dp),
         modifier = modifier.height(48.dp),
@@ -53,31 +49,4 @@ fun ShareButton(
             style = MaterialTheme.typography.labelLarge,
         )
     }
-}
-
-private fun buildShareText(state: GameState): String {
-    val attemptsLabel = if (state.status == GameStatus.WON) "${state.currentRow}" else "X"
-    val hardModeStar = if (state.hardMode) "*" else ""
-    val modeName = when (state.gameMode) {
-        GameMode.DAILY -> "Daily"
-        GameMode.PRACTICE -> "Practice"
-        GameMode.LEVEL -> "Level ${state.campaignLevel ?: ""}"
-        GameMode.TIMED_RUSH -> "Rush"
-        GameMode.DUEL -> "Duel"
-    }
-    val header = "LexiGuess $modeName $attemptsLabel/${state.maxAttempts}$hardModeStar (${state.wordLength} Letters)"
-
-    val rows = (0 until state.currentRow).joinToString("\n") { row ->
-        (0 until state.wordLength).joinToString("") { col ->
-            state.board[row].getOrElse(col) { TileState.EMPTY }.toEmoji()
-        }
-    }
-
-    return "$header\n\n$rows"
-}
-
-private fun TileState.toEmoji(): String = when (this) {
-    TileState.CORRECT -> "\uD83D\uDFE9"    // green square
-    TileState.MISPLACED -> "\uD83D\uDFE8"  // yellow square
-    else -> "\u2B1B"                        // black square
 }

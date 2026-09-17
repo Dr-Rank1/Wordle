@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import com.rank.lexi.ui.theme.LocalReducedMotion
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -52,7 +53,8 @@ fun ConfettiParticleEngine(
     particleEffect: String = "CONFETTI",
     modifier: Modifier = Modifier,
 ) {
-    if (!trigger) return
+    val reducedMotion = LocalReducedMotion.current
+    if (!trigger || reducedMotion) return
 
     val colors = PALETTES[particleEffect] ?: PALETTES["CONFETTI"]!!
     val progress = remember { Animatable(0f) }

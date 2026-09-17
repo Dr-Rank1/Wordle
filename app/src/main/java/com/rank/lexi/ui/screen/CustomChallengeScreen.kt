@@ -31,6 +31,7 @@ import com.rank.lexi.ui.theme.TileMisplaced
 @Composable
 fun CustomChallengeScreen(
     wordRepository: WordRepository,
+    initialCode: String = "",
     onStartChallengeGame: (word: String, maxAttempts: Int) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -44,29 +45,23 @@ fun CustomChallengeScreen(
     var wordError by remember { mutableStateOf<String?>(null) }
 
     // Play tab state
-    var challengeCodeInput by remember { mutableStateOf("") }
+    var challengeCodeInput by remember { mutableStateOf(initialCode.removePrefix("challenge/")) }
     var decodedChallenge by remember { mutableStateOf<ChallengeData?>(null) }
     var codeError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialCode) {
+        if (initialCode.isNotBlank()) {
+            selectedTab = 1
+            val decoded = ChallengeCodec.decode(initialCode)
+            decodedChallenge = decoded
+            codeError = if (decoded == null) "Invalid challenge code" else null
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "CUSTOM PUZZLE",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = TileCorrect,
-                            letterSpacing = 1.5.sp,
-                        )
-                        Text(
-                            text = "Challenge a Friend",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
-                        )
-                    }
-                },
+                title = { Text("Challenge") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
