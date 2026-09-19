@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.rank.lexi.data.repository.PlayerPreferences
 import com.rank.lexi.ui.audio.SoundManager
+import com.rank.lexi.ui.composable.TutorialDialog
 import com.rank.lexi.ui.theme.TileCorrect
 import kotlinx.coroutines.launch
 
@@ -35,6 +36,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    var showTutorial by remember { mutableStateOf(false) }
     val soundEnabled by playerPreferences.soundEnabledFlow.collectAsState(initial = true)
     val hapticsEnabled by playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
     val hardMode by playerPreferences.hardModeFlow.collectAsState(initial = false)
@@ -251,6 +253,15 @@ fun SettingsScreen(
             }
 
             OutlinedButton(
+                onClick = { showTutorial = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Outlined.HelpOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("How to play tutorial")
+            }
+
+            OutlinedButton(
                 onClick = onNavigateToCosmetics,
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -370,6 +381,13 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.padding(bottom = 16.dp),
+            )
+        }
+
+        if (showTutorial) {
+            TutorialDialog(
+                soundManager = soundManager,
+                onDismiss = { showTutorial = false },
             )
         }
     }

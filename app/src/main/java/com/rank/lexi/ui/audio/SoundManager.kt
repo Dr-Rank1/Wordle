@@ -67,6 +67,7 @@ class SoundManager @Inject constructor() {
     private fun playTrack(track: AudioTrack?) {
         if (!isEnabled || track == null) return
         try {
+            if (track.state != AudioTrack.STATE_INITIALIZED) return
             if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
                 track.stop()
             }

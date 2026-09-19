@@ -19,12 +19,12 @@ data class TiltAngles(
  * When disabled via LocalTiltParallaxEnabled, registers no listeners and returns (0, 0).
  */
 @Composable
-fun rememberDeviceTilt(): TiltAngles {
+fun rememberDeviceTilt(): State<TiltAngles> {
     val enabled = LocalTiltParallaxEnabled.current
-    if (!enabled) return TiltAngles(0f, 0f)
+    val tiltState = remember { mutableStateOf(TiltAngles(0f, 0f)) }
+    if (!enabled) return tiltState
 
     val context = LocalContext.current
-    val tiltState = remember { mutableStateOf(TiltAngles(0f, 0f)) }
 
     DisposableEffect(enabled, context) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
@@ -70,5 +70,5 @@ fun rememberDeviceTilt(): TiltAngles {
         }
     }
 
-    return tiltState.value
+    return tiltState
 }

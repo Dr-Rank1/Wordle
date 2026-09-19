@@ -37,6 +37,15 @@ import com.rank.lexi.domain.model.*
 import com.rank.lexi.ui.audio.SoundManager
 import com.rank.lexi.ui.composable.ConfettiParticleEngine
 import com.rank.lexi.ui.theme.*
+import android.view.KeyEvent as AndroidKeyEvent
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.rank.lexi.ui.util.ShareResult
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,8 +61,16 @@ fun MultiBoardScreen(
     var soundEnabled by remember { mutableStateOf(true) }
     val particleEffect by viewModel.playerPreferences.particleEffectFlow.collectAsState(initial = "CONFETTI")
 
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val hapticsEnabled by viewModel.playerPreferences.hapticsEnabledFlow.collectAsState(initial = true)
+    val focusRequester = remember { FocusRequester() }
+
     LaunchedEffect(Unit) {
         viewModel.playerPreferences.soundEnabledFlow.collect { soundEnabled = it }
+    }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
 
     val state = gameState ?: return
@@ -85,6 +102,50 @@ fun MultiBoardScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onKeyEvent { keyEvent ->
+                    if (keyEvent.type == KeyEventType.KeyDown) {
+                        when (keyEvent.key) {
+                            Key.Enter, Key.NumPadEnter -> {
+                                if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                val previous = state.status
+                                viewModel.onSubmit()
+                                val newState = viewModel.state.value
+                                if (soundEnabled && newState != null) {
+                                    if (newState.status == GameStatus.WON && previous != GameStatus.WON) {
+                                        soundManager.playVictory()
+                                    } else if (newState.shake) {
+                                        soundManager.playError()
+                                    } else {
+                                        soundManager.playKeyClick()
+                                    }
+                                }
+                                true
+                            }
+                            Key.Backspace -> {
+                                if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                if (soundEnabled) soundManager.playKeyClick()
+                                viewModel.onDelete()
+                                true
+                            }
+                            else -> {
+                                val nativeCode = keyEvent.nativeKeyEvent.keyCode
+                                if (nativeCode in AndroidKeyEvent.KEYCODE_A..AndroidKeyEvent.KEYCODE_Z) {
+                                    val char = ('A' + (nativeCode - AndroidKeyEvent.KEYCODE_A))
+                                    if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    if (soundEnabled) soundManager.playKeyClick()
+                                    viewModel.onLetter(char)
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                }
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
@@ -207,6 +268,7 @@ fun MultiBoardScreen(
                 MultiBoardKeyboard(
                     mode = state.mode,
                     keyStates = state.keyBoardStates,
+                    hapticsEnabled = hapticsEnabled,
                     onLetter = { char ->
                         if (soundEnabled) soundManager.playKeyClick()
                         viewModel.onLetter(char)
@@ -252,11 +314,28 @@ fun MultiBoardScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
-                        Button(
-                            onClick = { viewModel.startMatch(selectedMode) },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Text("Rematch", fontWeight = FontWeight.Bold)
+                            Button(
+                                onClick = { viewModel.startMatch(selectedMode) },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                            ) {
+                                Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Rematch", fontWeight = FontWeight.Bold)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    ShareResult.shareMultiBoard(context, state)
+                                },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                            ) {
+                                Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Share", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -406,10 +485,13 @@ private fun MiniTile(
 private fun MultiBoardKeyboard(
     mode: MultiBoardMode,
     keyStates: Map<Char, List<TileState>>,
+    hapticsEnabled: Boolean = true,
     onLetter: (Char) -> Unit,
     onDelete: () -> Unit,
     onSubmit: () -> Unit,
 ) {
+    val darkMode = LocalDarkMode.current
+    val haptic = LocalHapticFeedback.current
     val rows = listOf(
         "QWERTYUIOP",
         "ASDFGHJKL",
@@ -428,15 +510,23 @@ private fun MultiBoardKeyboard(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (index == 2) {
+                    val actionBg = if (darkMode) KeyDefaultDark else KeyDefault
+                    val actionContent = if (darkMode) Color.White else KeyText
                     // ENTER button
                     Button(
-                        onClick = onSubmit,
+                        onClick = {
+                            if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onSubmit()
+                        },
                         modifier = Modifier
                             .weight(1.5f)
                             .height(42.dp),
                         shape = RoundedCornerShape(6.dp),
                         contentPadding = PaddingValues(0.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = KeyDefaultDark),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = actionBg,
+                            contentColor = actionContent,
+                        ),
                     ) {
                         Text("ENTER", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
@@ -447,7 +537,10 @@ private fun MultiBoardKeyboard(
                     SplitKey(
                         letter = char,
                         states = states,
-                        onClick = { onLetter(char) },
+                        onClick = {
+                            if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onLetter(char)
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .height(42.dp),
@@ -455,15 +548,23 @@ private fun MultiBoardKeyboard(
                 }
 
                 if (index == 2) {
+                    val actionBg = if (darkMode) KeyDefaultDark else KeyDefault
+                    val actionContent = if (darkMode) Color.White else KeyText
                     // DEL button
                     Button(
-                        onClick = onDelete,
+                        onClick = {
+                            if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onDelete()
+                        },
                         modifier = Modifier
                             .weight(1.5f)
                             .height(42.dp),
                         shape = RoundedCornerShape(6.dp),
                         contentPadding = PaddingValues(0.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = KeyDefaultDark),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = actionBg,
+                            contentColor = actionContent,
+                        ),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Backspace,
@@ -524,42 +625,45 @@ private fun SplitKey(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(colorForTileState(states[0], boardTheme))
+                            .background(colorForTileState(states[0], boardTheme, darkMode))
                     )
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(colorForTileState(states[1], boardTheme))
+                            .background(colorForTileState(states[1], boardTheme, darkMode))
                     )
                 }
             } else {
                 // Quordle: 4 quadrants
                 Column(modifier = Modifier.fillMaxSize()) {
                     Row(modifier = Modifier.weight(1f)) {
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[0], boardTheme)))
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[1], boardTheme)))
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[0], boardTheme, darkMode)))
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[1], boardTheme, darkMode)))
                     }
                     Row(modifier = Modifier.weight(1f)) {
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[2], boardTheme)))
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[3], boardTheme)))
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[2], boardTheme, darkMode)))
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight().background(colorForTileState(states[3], boardTheme, darkMode)))
                     }
                 }
             }
+
+            val hasColoredState = states.any { it == TileState.CORRECT || it == TileState.MISPLACED }
+            val keyTextColor = if (!darkMode && !hasColoredState) KeyText else Color.White
 
             Text(
                 text = letter.toString(),
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
-                color = Color.White,
+                color = keyTextColor,
             )
         }
     }
 }
 
-private fun colorForTileState(state: TileState, theme: BoardTheme): Color = when (state) {
+private fun colorForTileState(state: TileState, theme: BoardTheme, darkMode: Boolean): Color = when (state) {
     TileState.CORRECT -> theme.correctColor
     TileState.MISPLACED -> theme.misplacedColor
     TileState.ABSENT -> theme.absentColor
-    else -> theme.keyDefault
+    else -> if (darkMode) theme.keyDefault else KeyDefault
 }

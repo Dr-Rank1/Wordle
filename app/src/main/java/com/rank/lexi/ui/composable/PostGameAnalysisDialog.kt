@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -161,12 +162,33 @@ fun PostGameAnalysisDialog(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         style = MaterialTheme.typography.labelMedium,
                                     )
-                                    Text(
-                                        text = step.guessWord.uppercase(),
-                                        fontWeight = FontWeight.Black,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        letterSpacing = 1.sp,
-                                    )
+                                    Column {
+                                        Text(
+                                            text = step.guessWord.uppercase(),
+                                            fontWeight = FontWeight.Black,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            letterSpacing = 1.sp,
+                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                            modifier = Modifier.padding(top = 3.dp),
+                                        ) {
+                                            step.rowStates.forEach { tileState ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(10.dp)
+                                                        .clip(RoundedCornerShape(2.dp))
+                                                        .background(
+                                                            when (tileState) {
+                                                                TileState.CORRECT -> TileCorrect
+                                                                TileState.MISPLACED -> TileMisplaced
+                                                                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+                                                            }
+                                                        )
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
 
                                 Column(horizontalAlignment = Alignment.End) {

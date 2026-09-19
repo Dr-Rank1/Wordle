@@ -63,13 +63,14 @@ fun TileGrid(
     }
     val fontSize = if (maxRows > 6) (baseFontSize.value * 0.9f).sp else baseFontSize
 
-    val tilt = rememberDeviceTilt()
+    val tiltState = rememberDeviceTilt()
     val tiltEnabled = LocalTiltParallaxEnabled.current
 
     Column(
         modifier = modifier
             .graphicsLayer {
                 if (tiltEnabled) {
+                    val tilt = tiltState.value
                     rotationX = tilt.rotationX
                     rotationY = tilt.rotationY
                     cameraDistance = 18f * density
@@ -89,6 +90,7 @@ fun TileGrid(
                 fontSize = fontSize,
                 isCurrentRow = row == state.currentRow,
                 isSubmitted = row < state.currentRow,
+                isWinningRow = state.winningRow == row,
                 shake = state.shake && row == state.currentRow,
                 inputLength = if (row == state.currentRow) state.currentInput.length else 0,
                 onTileFlipSound = onTileFlipSound,
@@ -108,6 +110,7 @@ private fun TileRow(
     fontSize: androidx.compose.ui.unit.TextUnit,
     isCurrentRow: Boolean,
     isSubmitted: Boolean,
+    isWinningRow: Boolean,
     shake: Boolean,
     inputLength: Int,
     onTileFlipSound: ((TileState, Int) -> Unit)?,
@@ -151,6 +154,7 @@ private fun TileRow(
                 fontSize = fontSize,
                 column = col,
                 isSubmitted = isSubmitted,
+                isWinningTile = isWinningRow && tileStates.getOrElse(col) { TileState.EMPTY } == TileState.CORRECT,
                 revealDelayMs = col * 250L,
                 onTileFlipSound = onTileFlipSound,
                 darkMode = darkMode,
@@ -167,10 +171,20 @@ private fun TileCell(
     fontSize: androidx.compose.ui.unit.TextUnit,
     column: Int,
     isSubmitted: Boolean,
+    isWinningTile: Boolean = false,
     revealDelayMs: Long,
     onTileFlipSound: ((TileState, Int) -> Unit)?,
     darkMode: Boolean,
 ) {
+    val winBounceOffset = remember { Animatable(0f) }
+    LaunchedEffect(isWinningTile) {
+        if (isWinningTile) {
+            delay(column * 100L)
+            winBounceOffset.animateTo(-24f, tween(150, easing = LinearOutSlowInEasing))
+            winBounceOffset.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
+        }
+    }
+
     val popScale = remember { Animatable(1f) }
     LaunchedEffect(letter) {
         if (letter != ' ' && !isSubmitted) {
@@ -297,6 +311,7 @@ private fun TileCell(
                 cameraDistance = 16f * density
                 scaleX = popScale.value * airLiftScale
                 scaleY = popScale.value * airLiftScale
+                translationY = winBounceOffset.value
                 shadowElevation = dynamicElevation * density
                 shape = cornerShape
                 clip = false

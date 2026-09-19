@@ -25,6 +25,8 @@ data class GameState(
     val message: String? = null,
     val remainingCandidates: Int = 0,
     val hardMode: Boolean = false,
+    val isRevealing: Boolean = false,
+    val winningRow: Int? = null,
 
     // Timed Rush state
     val isRushActive: Boolean = false,

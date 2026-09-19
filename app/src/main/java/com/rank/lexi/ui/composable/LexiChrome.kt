@@ -154,57 +154,13 @@ fun SampleLetterTile(
 
 @Composable
 fun HowToPlayDialog(
+    soundManager: com.rank.lexi.ui.audio.SoundManager? = null,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("How to play") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = "Guess the word in six tries. After each guess, the tiles change color.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                HowToExample(
-                    letter = 'W',
-                    color = TileCorrect,
-                    caption = "Right letter, right place",
-                )
-                HowToExample(
-                    letter = 'A',
-                    color = TileMisplaced,
-                    caption = "Right letter, wrong place",
-                )
-                HowToExample(
-                    letter = 'R',
-                    color = TileAbsent,
-                    caption = "Not in the word",
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Got it") }
-        },
+    TutorialDialog(
+        soundManager = soundManager,
+        onDismiss = onDismiss,
     )
-}
-
-@Composable
-private fun HowToExample(
-    letter: Char,
-    color: Color,
-    caption: String,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        SampleLetterTile(letter = letter, background = color)
-        Text(
-            text = caption,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
 }
 
 @Composable

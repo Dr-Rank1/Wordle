@@ -54,11 +54,13 @@ import com.rank.lexi.ui.composable.LexiCard
 import com.rank.lexi.ui.composable.LexiSectionLabel
 import com.rank.lexi.ui.composable.ModeTile
 import com.rank.lexi.ui.composable.StreakCalendarDialog
+import com.rank.lexi.ui.audio.SoundManager
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     playerPreferences: PlayerPreferences,
+    soundManager: SoundManager? = null,
     currentStreak: Int = 0,
     bestStreak: Int = 0,
     onStartDaily: () -> Unit,
@@ -247,6 +249,9 @@ fun HomeScreen(
             ModeTile("Look", "Colors and tiles", Icons.Outlined.Style, Modifier.weight(1f), onNavigateToCosmetics)
             ModeTile("Stats", "Wins and streaks", Icons.Outlined.BarChart, Modifier.weight(1f), onNavigateToStats)
         }
+        ModeTile("Tutorial", "Interactive guide for new players", Icons.Outlined.HelpOutline, Modifier.fillMaxWidth()) {
+            showHowToPlay = true
+        }
     }
 
     if (showLengthPicker) {
@@ -274,6 +279,7 @@ fun HomeScreen(
 
     if (showHowToPlay) {
         HowToPlayDialog(
+            soundManager = soundManager,
             onDismiss = {
                 showHowToPlay = false
                 scope.launch { playerPreferences.setHasSeenHowToPlay() }

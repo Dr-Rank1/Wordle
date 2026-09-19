@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import com.rank.lexi.ui.theme.LocalReducedMotion
 import kotlin.math.sin
@@ -21,8 +23,7 @@ private data class ConfettiPiece(
     val velocityX: Float,
     val velocityY: Float,
     val rotationSpeed: Float,
-    val width: Float,
-    val height: Float,
+    val size: Float,
     val color: Color,
     val swayPhase: Float,
 )
@@ -58,16 +59,17 @@ fun ConfettiParticleEngine(
 
     val colors = PALETTES[particleEffect] ?: PALETTES["CONFETTI"]!!
     val progress = remember { Animatable(0f) }
+    val isEmbers = particleEffect == "GOLDEN_EMBERS"
+
     val pieces = remember(particleEffect) {
-        List(70) {
+        List(if (isEmbers) 85 else 70) {
             ConfettiPiece(
                 initialX = Random.nextFloat(),
-                initialY = -Random.nextFloat() * 200f,
-                velocityX = (Random.nextFloat() - 0.5f) * 400f,
-                velocityY = 600f + Random.nextFloat() * 500f,
+                initialY = if (isEmbers) 1.1f + Random.nextFloat() * 0.3f else -Random.nextFloat() * 0.25f,
+                velocityX = (Random.nextFloat() - 0.5f) * (if (isEmbers) 180f else 400f),
+                velocityY = if (isEmbers) -(450f + Random.nextFloat() * 400f) else (550f + Random.nextFloat() * 450f),
                 rotationSpeed = (Random.nextFloat() - 0.5f) * 720f,
-                width = 12f + Random.nextFloat() * 10f,
-                height = 6f + Random.nextFloat() * 8f,
+                size = if (isEmbers) (5f + Random.nextFloat() * 9f) else (10f + Random.nextFloat() * 12f),
                 color = colors[Random.nextInt(colors.size)],
                 swayPhase = Random.nextFloat() * 6.28f,
             )
@@ -78,7 +80,7 @@ fun ConfettiParticleEngine(
         progress.snapTo(0f)
         progress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 3200, easing = LinearEasing),
+            animationSpec = tween(durationMillis = if (isEmbers) 3500 else 3000, easing = LinearEasing),
         )
     }
 
@@ -89,21 +91,71 @@ fun ConfettiParticleEngine(
             val t = progress.value
 
             pieces.forEach { piece ->
-                val x = (piece.initialX * canvasWidth) + (piece.velocityX * t) + sin(t * 10f + piece.swayPhase) * 40f
-                val y = piece.initialY + (piece.velocityY * t) + (400f * t * t)
+                val x = (piece.initialX * canvasWidth) + (piece.velocityX * t) + sin(t * 8f + piece.swayPhase) * 35f
+                val y = if (isEmbers) {
+                    (piece.initialY * canvasHeight) + (piece.velocityY * t)
+                } else {
+                    (piece.initialY * canvasHeight) + (piece.velocityY * t) + (350f * t * t)
+                }
                 val rotation = piece.rotationSpeed * t
-                val alpha = (1f - t).coerceIn(0f, 1f)
+                val alpha = if (isEmbers) {
+                    (sin(t * Math.PI.toFloat()) * 1.1f).coerceIn(0f, 1f)
+                } else {
+                    (1f - t).coerceIn(0f, 1f)
+                }
 
-                if (y in -50f..(canvasHeight + 50f)) {
+                if (y in -60f..(canvasHeight + 60f) && x in -40f..(canvasWidth + 40f)) {
                     rotate(rotation, pivot = Offset(x, y)) {
-                        drawRect(
-                            color = piece.color.copy(alpha = alpha),
-                            topLeft = Offset(x - piece.width / 2f, y - piece.height / 2f),
-                            size = Size(piece.width, piece.height),
-                        )
+                        when (particleEffect) {
+                            "STARLIGHT" -> drawStarParticle(x, y, piece.size, piece.color.copy(alpha = alpha))
+                            "GOLDEN_EMBERS" -> drawEmberParticle(x, y, piece.size, piece.color.copy(alpha = alpha))
+                            "CYBER_NEON" -> drawDiamondParticle(x, y, piece.size, piece.color.copy(alpha = alpha))
+                            else -> {
+                                drawRect(
+                                    color = piece.color.copy(alpha = alpha),
+                                    topLeft = Offset(x - piece.size / 2f, y - piece.size / 4f),
+                                    size = Size(piece.size, piece.size * 0.55f),
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
+}
+
+private fun DrawScope.drawStarParticle(x: Float, y: Float, size: Float, color: Color) {
+    val r = size * 0.7f
+    val inner = r * 0.28f
+    val path = Path().apply {
+        moveTo(x, y - r)
+        lineTo(x + inner, y - inner)
+        lineTo(x + r, y)
+        lineTo(x + inner, y + inner)
+        lineTo(x, y + r)
+        lineTo(x - inner, y + inner)
+        lineTo(x - r, y)
+        lineTo(x - inner, y - inner)
+        close()
+    }
+    drawPath(path, color)
+}
+
+private fun DrawScope.drawDiamondParticle(x: Float, y: Float, size: Float, color: Color) {
+    val w = size * 0.5f
+    val h = size * 0.9f
+    val path = Path().apply {
+        moveTo(x, y - h)
+        lineTo(x + w, y)
+        lineTo(x, y + h)
+        lineTo(x - w, y)
+        close()
+    }
+    drawPath(path, color)
+}
+
+private fun DrawScope.drawEmberParticle(x: Float, y: Float, size: Float, color: Color) {
+    drawCircle(color, radius = size * 0.5f, center = Offset(x, y))
+    drawCircle(Color.White.copy(alpha = color.alpha * 0.75f), radius = size * 0.22f, center = Offset(x, y))
 }

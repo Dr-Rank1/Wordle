@@ -37,6 +37,18 @@ import com.rank.lexi.ui.theme.TileMisplaced
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+import com.rank.lexi.ui.audio.SoundManager
+import com.rank.lexi.domain.model.GameStatus
+import kotlinx.coroutines.delay
+import android.view.KeyEvent as AndroidKeyEvent
+import androidx.compose.foundation.focusable
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.LocalContext
+import com.rank.lexi.ui.util.ShareResult
+
 enum class DuelPhase {
     P1_SET_WORD,
     HANDOFF_TO_P2,
@@ -53,9 +65,12 @@ fun PassAndPlayScreen(
     wordRepository: WordRepository,
     engine: GameEngine,
     achievementDao: AchievementDao? = null,
+    soundManager: SoundManager? = null,
     onBack: () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val focusRequester = remember { FocusRequester() }
     var phase by remember { mutableStateOf(DuelPhase.P1_SET_WORD) }
     var secretWordP1 by remember { mutableStateOf("") }
     var secretWordP2 by remember { mutableStateOf("") }
@@ -74,6 +89,12 @@ fun PassAndPlayScreen(
     // Active board state
     var activeState by remember { mutableStateOf(GameState(wordLength = 5)) }
 
+    LaunchedEffect(phase) {
+        if (phase == DuelPhase.P1_SOLVING || phase == DuelPhase.P2_SOLVING) {
+            focusRequester.requestFocus()
+        }
+    }
+
     fun startSolving(secretWord: String) {
         roundStartTime = System.currentTimeMillis()
         activeState = GameState(
@@ -83,26 +104,30 @@ fun PassAndPlayScreen(
     }
 
     fun onKey(char: Char) {
-        if (activeState.status != com.rank.lexi.domain.model.GameStatus.IN_PROGRESS) return
+        if (activeState.status != GameStatus.IN_PROGRESS || activeState.isRevealing) return
         if (activeState.currentInput.length < 5) {
+            soundManager?.playKeyClick()
             val newInput = activeState.currentInput + char
             activeState = activeState.withCurrentInput(newInput)
         }
     }
 
     fun onBackspace() {
-        if (activeState.currentInput.isNotEmpty()) {
-            activeState = activeState.withCurrentInput(activeState.currentInput.dropLast(1))
-        }
+        if (activeState.isRevealing || activeState.currentInput.isEmpty()) return
+        soundManager?.playKeyClick()
+        activeState = activeState.withCurrentInput(activeState.currentInput.dropLast(1))
     }
 
     fun onEnter() {
+        if (activeState.isRevealing) return
         val input = activeState.currentInput.uppercase()
         if (input.length != 5) {
+            soundManager?.playError()
             errorMessage = "Word must be 5 letters"
             return
         }
         if (!wordRepository.isValidWord(input)) {
+            soundManager?.playError()
             errorMessage = "Not in word list"
             return
         }
@@ -117,13 +142,6 @@ fun PassAndPlayScreen(
         val newBoardLetters = activeState.boardLetters.toMutableList().map { it.toMutableList() }
         input.forEachIndexed { col, c -> newBoardLetters[row][col] = c }
 
-        val newKeyStates = activeState.keyStates.toMutableMap()
-        results.forEachIndexed { col, s ->
-            val k = input[col]
-            val curr = newKeyStates[k] ?: TileState.EMPTY
-            if (s.priority() > curr.priority()) newKeyStates[k] = s
-        }
-
         val won = results.all { it == TileState.CORRECT }
         val nextRow = row + 1
         val lost = !won && nextRow >= 6
@@ -131,25 +149,49 @@ fun PassAndPlayScreen(
         activeState = activeState.copy(
             board = newBoard,
             boardLetters = newBoardLetters,
-            keyStates = newKeyStates,
             currentRow = nextRow,
             currentInput = "",
+            isRevealing = true,
         )
 
-        if (won || lost) {
-            val durationSec = (System.currentTimeMillis() - roundStartTime) / 1000
-            if (phase == DuelPhase.P2_SOLVING) {
-                p2Attempts = if (won) nextRow else 7
-                p2Won = won
-                p2TimeSeconds = durationSec
-                phase = DuelPhase.P2_SET_WORD
-            } else if (phase == DuelPhase.P1_SOLVING) {
-                p1Attempts = if (won) nextRow else 7
-                p1Won = won
-                p1TimeSeconds = durationSec
-                phase = DuelPhase.MATCH_OVER
-                achievementDao?.let { dao ->
-                    coroutineScope.launch {
+        coroutineScope.launch {
+            for (col in 0 until 5) {
+                delay(250L)
+                val k = input[col]
+                val s = results[col]
+                val updatedKeys = activeState.keyStates.toMutableMap()
+                val curr = updatedKeys[k] ?: TileState.EMPTY
+                if (s.priority() > curr.priority()) {
+                    updatedKeys[k] = s
+                    activeState = activeState.copy(keyStates = updatedKeys)
+                }
+            }
+            delay(380L)
+
+            activeState = activeState.copy(
+                isRevealing = false,
+                status = if (won) GameStatus.WON else if (lost) GameStatus.LOST else GameStatus.IN_PROGRESS,
+                winningRow = if (won) row else null,
+            )
+
+            if (won) {
+                soundManager?.playVictory()
+            }
+
+            if (won || lost) {
+                val durationSec = (System.currentTimeMillis() - roundStartTime) / 1000
+                delay(1600L)
+                if (phase == DuelPhase.P2_SOLVING) {
+                    p2Attempts = if (won) nextRow else 7
+                    p2Won = won
+                    p2TimeSeconds = durationSec
+                    phase = DuelPhase.P2_SET_WORD
+                } else if (phase == DuelPhase.P1_SOLVING) {
+                    p1Attempts = if (won) nextRow else 7
+                    p1Won = won
+                    p1TimeSeconds = durationSec
+                    phase = DuelPhase.MATCH_OVER
+                    achievementDao?.let { dao ->
                         val existing = dao.getAchievement("DUEL_PLAYED")
                         if (existing != null && !existing.unlocked) {
                             dao.upsertAchievement(
@@ -192,6 +234,34 @@ fun PassAndPlayScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onKeyEvent { keyEvent ->
+                    if ((phase == DuelPhase.P1_SOLVING || phase == DuelPhase.P2_SOLVING) && keyEvent.type == KeyEventType.KeyDown) {
+                        when (keyEvent.key) {
+                            Key.Enter, Key.NumPadEnter -> {
+                                onEnter()
+                                true
+                            }
+                            Key.Backspace -> {
+                                onBackspace()
+                                true
+                            }
+                            else -> {
+                                val nativeCode = keyEvent.nativeKeyEvent.keyCode
+                                if (nativeCode in AndroidKeyEvent.KEYCODE_A..AndroidKeyEvent.KEYCODE_Z) {
+                                    val char = ('A' + (nativeCode - AndroidKeyEvent.KEYCODE_A))
+                                    onKey(char)
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                }
                 .padding(padding)
                 .padding(16.dp),
         ) {
@@ -256,7 +326,10 @@ fun PassAndPlayScreen(
                             )
                         }
 
-                        TileGrid(state = activeState)
+                        TileGrid(
+                            state = activeState,
+                            onTileFlipSound = { ts, col -> soundManager?.playTileFlip(ts, col) },
+                        )
 
                         WordleKeyboard(
                             keyStates = activeState.keyStates,
@@ -328,7 +401,10 @@ fun PassAndPlayScreen(
                             )
                         }
 
-                        TileGrid(state = activeState)
+                        TileGrid(
+                            state = activeState,
+                            onTileFlipSound = { ts, col -> soundManager?.playTileFlip(ts, col) },
+                        )
 
                         WordleKeyboard(
                             keyStates = activeState.keyStates,
@@ -429,7 +505,7 @@ fun PassAndPlayScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
                                 Button(
                                     onClick = {
@@ -449,8 +525,29 @@ fun PassAndPlayScreen(
                                 }
 
                                 OutlinedButton(
-                                    onClick = onBack,
+                                    onClick = {
+                                        ShareResult.shareDuel(
+                                            context = context,
+                                            p1Won = p1Won,
+                                            p1Attempts = p1Attempts,
+                                            p1TimeSeconds = p1TimeSeconds,
+                                            p2Won = p2Won,
+                                            p2Attempts = p2Attempts,
+                                            p2TimeSeconds = p2TimeSeconds,
+                                            winnerText = winnerText,
+                                        )
+                                    },
                                     modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                ) {
+                                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Share", fontWeight = FontWeight.Bold)
+                                }
+
+                                OutlinedButton(
+                                    onClick = onBack,
+                                    modifier = Modifier.weight(0.8f).height(48.dp),
                                     shape = RoundedCornerShape(12.dp),
                                 ) {
                                     Text("Home", fontWeight = FontWeight.Bold)

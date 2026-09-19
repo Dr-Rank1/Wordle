@@ -61,14 +61,17 @@ object DictionaryHelper {
         "LEXICON" to WordDefinition("LEXICON", "noun", "The vocabulary of a person, language, or branch of knowledge.", "The game expanded his lexicon with hundreds of articulate words."),
     )
 
+    private val runtimeCache = java.util.concurrent.ConcurrentHashMap<String, WordDefinition>()
+
     /**
      * Resolves a definition for [rawWord].
-     * Checks the local built-in dictionary first, then falls back to the online
-     * Free Dictionary API if accessible, or generates a clean linguistic entry.
+     * Checks the local built-in dictionary first, then runtime cache,
+     * then falls back to the online Free Dictionary API, or generates a clean linguistic entry.
      */
     suspend fun resolveDefinition(rawWord: String): WordDefinition = withContext(Dispatchers.IO) {
         val word = rawWord.trim().uppercase()
         BUILT_IN_DEFINITIONS[word]?.let { return@withContext it }
+        runtimeCache[word]?.let { return@withContext it }
 
         // Attempt online lookup via Free Dictionary API
         try {
@@ -95,12 +98,14 @@ object DictionaryHelper {
                             val defText = firstDef.optString("definition", "")
                             val exampleText = firstDef.optString("example", "")
                             if (defText.isNotBlank()) {
-                                return@withContext WordDefinition(
+                                val resolved = WordDefinition(
                                     word = word,
                                     partOfSpeech = partOfSpeech,
                                     definition = defText,
                                     example = exampleText,
                                 )
+                                runtimeCache[word] = resolved
+                                return@withContext resolved
                             }
                         }
                     }
@@ -111,11 +116,13 @@ object DictionaryHelper {
         }
 
         // Clean linguistic fallback for any valid English word
-        WordDefinition(
+        val fallback = WordDefinition(
             word = word,
             partOfSpeech = "word",
             definition = "A ${word.length}-letter word in the LexiGuess lexicon.",
             example = "You successfully deduced the word $word in today's challenge.",
         )
+        runtimeCache[word] = fallback
+        fallback
     }
 }

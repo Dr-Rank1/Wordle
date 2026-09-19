@@ -176,6 +176,7 @@ fun LexiGuessNavGraph(
             composable(Routes.HOME) {
                 HomeScreen(
                     playerPreferences = playerPreferences,
+                    soundManager = soundManager,
                     currentStreak = currentStreak,
                     bestStreak = bestStreak,
                     wonDates = wonDatesList.toSet(),
@@ -296,6 +297,7 @@ fun LexiGuessNavGraph(
                     wordRepository = wordRepository,
                     engine = gameEngine,
                     achievementDao = achievementDao,
+                    soundManager = soundManager,
                     onBack = { navController.popBackStack() },
                 )
             }

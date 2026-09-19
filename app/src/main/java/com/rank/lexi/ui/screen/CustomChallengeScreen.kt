@@ -115,12 +115,28 @@ fun CustomChallengeScreen(
                             }
                         },
                         label = { Text("Secret Word (4 to 7 letters)") },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    val random = wordRepository.randomWord(5)
+                                    secretWordInput = random.uppercase()
+                                    wordError = null
+                                    generatedCode = null
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Casino,
+                                    contentDescription = "Random Word",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         isError = wordError != null,
                         supportingText = {
                             wordError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                                ?: Text("${secretWordInput.length}/7 letters")
+                                ?: Text("${secretWordInput.length}/7 letters (tap dice for random)")
                         },
                     )
 

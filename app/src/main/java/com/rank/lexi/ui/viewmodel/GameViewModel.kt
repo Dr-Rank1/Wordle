@@ -282,7 +282,7 @@ class GameViewModel @Inject constructor(
 
     fun onKey(char: Char) {
         val s = _state.value
-        if (s.status != GameStatus.IN_PROGRESS) return
+        if (s.status != GameStatus.IN_PROGRESS || s.isRevealing) return
         if (s.currentInput.length >= s.wordLength) return
 
         soundManager.playKeyClick()
@@ -292,7 +292,7 @@ class GameViewModel @Inject constructor(
 
     fun onBackspace() {
         val s = _state.value
-        if (s.status != GameStatus.IN_PROGRESS || s.currentInput.isEmpty()) return
+        if (s.status != GameStatus.IN_PROGRESS || s.isRevealing || s.currentInput.isEmpty()) return
 
         soundManager.playKeyClick()
         val newInput = s.currentInput.dropLast(1)
@@ -301,7 +301,7 @@ class GameViewModel @Inject constructor(
 
     fun onEnter() {
         val s = _state.value
-        if (s.status != GameStatus.IN_PROGRESS) return
+        if (s.status != GameStatus.IN_PROGRESS || s.isRevealing) return
         if (s.currentInput.length != s.wordLength) {
             showMessage("Not enough letters")
             soundManager.playError()
@@ -486,18 +486,16 @@ class GameViewModel @Inject constructor(
             else -> null
         }
 
+        // Advance board letters and row immediately so tile flip begins,
+        // but lock input and keep keys unchanged until flipped
         _state.update {
             it.copy(
                 board = newBoard,
                 boardLetters = buildBoardLetters(it.boardLetters, row, guess, len),
-                keyStates = newKeyStates,
                 currentRow = nextRow,
                 currentInput = "",
-                status = newStatus,
-                showConfetti = won,
+                isRevealing = true,
                 remainingCandidates = remaining,
-                message = message,
-                bossCurrentHp = newBossHp,
             )
         }
 
@@ -505,20 +503,49 @@ class GameViewModel @Inject constructor(
             viewModelScope.launch { gameRepository.appendGuess(guess) }
         }
 
-        if (newStatus != GameStatus.IN_PROGRESS) {
-            cancelBossTimer()
-        }
+        viewModelScope.launch {
+            // Synchronize keyboard key color reveal with tile flips (staggered delay)
+            for (col in 0 until len) {
+                delay(250L)
+                val key = guess[col]
+                val ts = results[col]
+                _state.update { current ->
+                    val updatedKeys = current.keyStates.toMutableMap()
+                    val cur = updatedKeys[key] ?: TileState.EMPTY
+                    if (ts.priority() > cur.priority()) {
+                        updatedKeys[key] = ts
+                        current.copy(keyStates = updatedKeys)
+                    } else current
+                }
+            }
 
-        if (won) {
-            soundManager.playVictory()
-        }
+            // Wait for the final tile flip animation to settle
+            delay(380L)
 
-        if (newStatus != GameStatus.IN_PROGRESS) {
-            val durationMs = System.currentTimeMillis() - roundStartTimeMs
-            val solveDurationSeconds = durationMs / 1000
-            _state.update { it.copy(solveDurationMs = durationMs) }
+            // Reveal sequence is complete - now update status, message, and trigger victory!
+            _state.update {
+                it.copy(
+                    isRevealing = false,
+                    status = newStatus,
+                    message = message,
+                    bossCurrentHp = newBossHp,
+                )
+            }
 
-            viewModelScope.launch {
+            if (newStatus != GameStatus.IN_PROGRESS) {
+                cancelBossTimer()
+            }
+
+            if (won) {
+                soundManager.playVictory()
+                _state.update { it.copy(showConfetti = true, winningRow = row) }
+            }
+
+            if (newStatus != GameStatus.IN_PROGRESS) {
+                val durationMs = System.currentTimeMillis() - roundStartTimeMs
+                val solveDurationSeconds = durationMs / 1000
+                _state.update { it.copy(solveDurationMs = durationMs) }
+
                 val def = wordRepository.fetchDefinition(s.targetWord)
                 _state.update { it.copy(definition = def) }
 
@@ -530,15 +557,13 @@ class GameViewModel @Inject constructor(
                     return@launch
                 }
 
-                delay(1_600)
+                delay(if (won) 1_800 else 1_400)
                 _state.update { it.copy(showGameOverSheet = true) }
             }
 
             if (won) {
-                viewModelScope.launch {
-                    delay(3_600)
-                    _state.update { it.copy(showConfetti = false) }
-                }
+                delay(3_600)
+                _state.update { it.copy(showConfetti = false, winningRow = null) }
             }
         }
     }
@@ -673,7 +698,7 @@ class GameViewModel @Inject constructor(
         )
         when {
             s.gameMode == GameMode.DAILY && persistDaily -> gameRepository.finalizeGame(record)
-            s.gameMode != GameMode.DAILY -> gameRepository.insertHistory(record)
+            else -> gameRepository.insertHistory(record)
         }
     }
 

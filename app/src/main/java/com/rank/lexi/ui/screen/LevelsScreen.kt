@@ -1,5 +1,6 @@
 package com.rank.lexi.ui.screen
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -223,45 +225,69 @@ private fun LevelNode(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val isBoss = record.levelNumber in listOf(10, 25, 40, 50)
+    val bossConfig = com.rank.lexi.domain.BossRegistry.getBossForLevel(record.levelNumber)
+    val isBoss = bossConfig != null
+
+    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "bossPulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1.0f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+        ),
+        label = "bossPulseAlpha",
+    )
 
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = when {
-            record.completed -> if (isBoss) Color(0xFFE53935).copy(alpha = 0.18f) else TileCorrect.copy(alpha = 0.15f)
-            isUnlocked -> if (isBoss) Color(0xFFE53935).copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            record.completed -> if (isBoss) Color(0xFFE53935).copy(alpha = 0.22f) else TileCorrect.copy(alpha = 0.15f)
+            isUnlocked -> if (isBoss) Color(0xFFE53935).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
             else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         },
         border = if (isBoss && isUnlocked) {
-            androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE53935).copy(alpha = 0.7f))
+            val borderAlpha = if (!record.completed) pulseAlpha else 0.8f
+            androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFE53935).copy(alpha = borderAlpha))
         } else null,
         modifier = modifier
             .aspectRatio(0.85f)
             .clickable(enabled = isUnlocked, onClick = onClick),
     ) {
         Column(
-            modifier = Modifier.padding(6.dp),
+            modifier = Modifier.padding(5.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceAround,
         ) {
             if (isUnlocked) {
                 if (isBoss) {
-                    Text(
-                        text = "Boss",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFFE53935),
-                        letterSpacing = 0.5.sp,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = null,
+                            tint = Color(0xFFE53935),
+                            modifier = Modifier.size(11.dp),
+                        )
+                        Text(
+                            text = "BOSS",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFE53935),
+                            letterSpacing = 0.5.sp,
+                        )
+                    }
                 }
                 Text(
                     text = "${record.levelNumber}",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     color = if (isBoss) Color(0xFFE53935) else if (record.completed) TileCorrect else MaterialTheme.colorScheme.onSurface,
                 )
 
-                // Stars
+                // Stars or Boss Name
                 Row(horizontalArrangement = Arrangement.Center) {
                     for (i in 1..3) {
                         Icon(

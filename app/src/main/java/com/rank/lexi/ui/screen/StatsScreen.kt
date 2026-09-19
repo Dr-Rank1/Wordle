@@ -10,6 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.ui.platform.LocalContext
+import com.rank.lexi.ui.util.ShareResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,6 +29,7 @@ fun StatsScreen(
     onBack: () -> Unit,
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
     Scaffold(
@@ -37,6 +41,26 @@ fun StatsScreen(
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    if (!state.loading) {
+                        IconButton(
+                            onClick = {
+                                ShareResult.shareStats(
+                                    context = context,
+                                    rankTitle = state.rankTitle,
+                                    level = state.level,
+                                    xp = state.xp,
+                                    totalGames = state.totalGames,
+                                    winPercent = state.winPercent,
+                                    currentStreak = state.currentStreak,
+                                    bestStreak = state.bestStreak,
+                                )
+                            }
+                        ) {
+                            Icon(Icons.Outlined.Share, contentDescription = "Share Statistics")
+                        }
+                    }
+                }
             )
         }
     ) { padding ->
