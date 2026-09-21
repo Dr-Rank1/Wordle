@@ -30,7 +30,7 @@ import com.rank.lexi.ui.theme.TileMisplaced
 @Composable
 fun AchievementsScreen(
     achievementDao: AchievementDao,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
 ) {
     val achievements by achievementDao.getAllAchievements().collectAsState(initial = emptyList())
     val unlockedCount by achievementDao.getUnlockedCount().collectAsState(initial = 0)
@@ -43,11 +43,14 @@ fun AchievementsScreen(
                         text = "Achievements",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 actions = {

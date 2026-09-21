@@ -229,14 +229,14 @@ fun LexiGuessNavGraph(
             }
 
             composable(Routes.SHOP) {
-                ShopScreen(onBack = { navController.popBackStack() })
+                ShopScreen(onBack = null)
             }
 
             composable(Routes.LEVELS) {
                 LevelsScreen(
                     levelDao = levelDao,
                     onSelectLevel = { navController.navigate(GameRoutes.level(it)) },
-                    onBack = { navController.popBackStack() },
+                    onBack = null,
                 )
             }
 
@@ -318,13 +318,13 @@ fun LexiGuessNavGraph(
             }
 
             composable(Routes.STATS) {
-                StatsScreen(onBack = { navController.popBackStack() })
+                StatsScreen(onBack = null)
             }
 
             composable(Routes.BADGES) {
                 AchievementsScreen(
                     achievementDao = achievementDao,
-                    onBack = { navController.popBackStack() },
+                    onBack = null,
                 )
             }
 

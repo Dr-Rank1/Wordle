@@ -31,7 +31,7 @@ import com.rank.lexi.ui.theme.TileMisplaced
 fun LevelsScreen(
     levelDao: LevelDao,
     onSelectLevel: (Int) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
 ) {
     val levels by levelDao.getAllLevels().collectAsState(initial = emptyList())
     val totalStars by levelDao.getTotalStars().collectAsState(initial = 0)
@@ -43,13 +43,15 @@ fun LevelsScreen(
                 title = {
                     Text(
                         text = "Campaign",
-                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
                     }
                 },
                 actions = {

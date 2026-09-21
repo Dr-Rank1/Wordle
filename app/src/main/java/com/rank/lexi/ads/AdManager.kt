@@ -22,7 +22,7 @@ class AdManager @Inject constructor(
 ) {
     companion object {
         // Replace with real rewarded ad unit ID before production release
-        private const val REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5354046379"
+        private const val REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"
         private const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
         private const val TAG = "AdManager"
     }
@@ -31,8 +31,12 @@ class AdManager @Inject constructor(
     private val _isAdReady = MutableStateFlow(false)
     val isAdReady: StateFlow<Boolean> = _isAdReady.asStateFlow()
 
+    private var _isRewardedLoading = false
+
     /** Pre-load the next rewarded ad. Call this eagerly (e.g. on app start or after a show). */
     fun loadRewardedAd() {
+        if (_isAdReady.value || _isRewardedLoading) return
+        _isRewardedLoading = true
         val adRequest = AdRequest.Builder().build()
         RewardedAd.load(
             context,
@@ -43,14 +47,16 @@ class AdManager @Inject constructor(
                     Log.d(TAG, "Rewarded ad loaded")
                     rewardedAd = ad
                     _isAdReady.value = true
+                    _isRewardedLoading = false
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     Log.w(TAG, "Rewarded ad failed to load: ${error.message}")
                     rewardedAd = null
                     _isAdReady.value = false
+                    _isRewardedLoading = false
                 }
-            },
+            }
         )
     }
 
@@ -100,9 +106,12 @@ class AdManager @Inject constructor(
     }
 
     private var interstitialAd: com.google.android.gms.ads.interstitial.InterstitialAd? = null
+    private var _isInterstitialLoading = false
 
     /** Pre-load the next interstitial ad. */
     fun loadInterstitialAd() {
+        if (interstitialAd != null || _isInterstitialLoading) return
+        _isInterstitialLoading = true
         val adRequest = AdRequest.Builder().build()
         com.google.android.gms.ads.interstitial.InterstitialAd.load(
             context,
@@ -112,11 +121,13 @@ class AdManager @Inject constructor(
                 override fun onAdLoaded(ad: com.google.android.gms.ads.interstitial.InterstitialAd) {
                     Log.d(TAG, "Interstitial ad loaded")
                     interstitialAd = ad
+                    _isInterstitialLoading = false
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     Log.w(TAG, "Interstitial ad failed to load: ${error.message}")
                     interstitialAd = null
+                    _isInterstitialLoading = false
                 }
             }
         )

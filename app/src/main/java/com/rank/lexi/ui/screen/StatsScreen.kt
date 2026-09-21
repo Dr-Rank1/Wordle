@@ -26,7 +26,7 @@ import com.rank.lexi.ui.viewmodel.StatsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current

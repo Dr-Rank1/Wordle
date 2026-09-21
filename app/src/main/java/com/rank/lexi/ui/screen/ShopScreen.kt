@@ -72,7 +72,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShopScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: ShopViewModel = hiltViewModel(),
 ) {
     val coins by viewModel.coinsFlow.collectAsState(initial = 0)
