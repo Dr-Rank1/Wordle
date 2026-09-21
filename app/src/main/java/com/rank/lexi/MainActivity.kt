@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
         
         adManager.loadRewardedAd()
         adManager.loadInterstitialAd()
+        adManager.loadAppOpenAd()
 
         setContent {
             val coroutineScope = rememberCoroutineScope()
@@ -104,6 +105,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        adManager.showAppOpenAdIfAvailable(this)
     }
 }
 

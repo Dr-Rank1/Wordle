@@ -1,5 +1,6 @@
 package com.rank.lexi.ui.screen
 
+import android.app.Activity
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -112,6 +113,15 @@ fun GameScreen(
             viewModel.playAgain()
         }
     }
+    val onBackToHomeWithAd = {
+        if (state.status != GameStatus.IN_PROGRESS) {
+            viewModel.adManager.showInterstitialAd(activity) {
+                onBackToHome()
+            }
+        } else {
+            onBackToHome()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -178,7 +188,7 @@ fun GameScreen(
                             }
                         },
                         navigationIcon = {
-                            IconButton(onClick = onBackToHome) {
+                            IconButton(onClick = onBackToHomeWithAd) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Home")
                             }
                         },
@@ -399,11 +409,22 @@ fun GameScreen(
             )
         }
 
+        val scope = rememberCoroutineScope()
         GameOverSheet(
             state = state,
             onPlayAgain = onPlayAgainWithAd,
             onShowAnalysis = { viewModel.showAnalysis() },
             onShowScorecard = { viewModel.showScorecard() },
+            onWatchAd = {
+                viewModel.adManager.showRewardedAd(
+                    activity = activity,
+                    onRewarded = { coinsEarned ->
+                        scope.launch {
+                            viewModel.coinRepository.addCoins(coinsEarned, "EARN_AD", "Watched Game Over rewarded ad")
+                        }
+                    }
+                )
+            },
             onDismiss = { viewModel.dismissGameOverSheet() },
         )
     }
@@ -422,6 +443,7 @@ private fun PowerUpBar(
     val scope = rememberCoroutineScope()
     var pendingItem by remember { mutableStateOf<ShopItem?>(null) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -432,10 +454,10 @@ private fun PowerUpBar(
             val canAfford = coins >= item.coinCost
             OutlinedButton(
                 onClick = { pendingItem = item },
-                enabled = canAfford,
+                enabled = true,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (canAfford) ShopAccent else androidx.compose.ui.graphics.Color.Gray,
+                    contentColor = if (canAfford) ShopAccent else MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
             ) {
                 Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
@@ -457,7 +479,7 @@ private fun PowerUpBar(
                         Text(
                             "${item.coinCost}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (canAfford) CoinGold else androidx.compose.ui.graphics.Color.Gray,
+                            color = if (canAfford) CoinGold else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -467,30 +489,53 @@ private fun PowerUpBar(
 
     // Confirm dialog
     pendingItem?.let { item ->
+        val canAfford = coins >= item.coinCost
         AlertDialog(
             onDismissRequest = { pendingItem = null },
-            title = { Text("Use ${item.displayName}?") },
+            title = { Text(if (canAfford) "Use ${item.displayName}?" else "Need more coins!") },
             text = {
                 Column {
                     Text(item.description)
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Cost: ${item.coinCost} 🪙  ·  You have $coins 🪙",
+                        text = if (canAfford) {
+                            "Cost: ${item.coinCost} 🪙  ·  You have $coins 🪙"
+                        } else {
+                            "Cost: ${item.coinCost} 🪙  ·  You have $coins 🪙\nWatch a quick ad to earn +50 🪙!"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        pendingItem = null
-                        scope.launch {
-                            val purchased = shopViewModel.purchaseAndApply(item, viewModel)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = ShopAccent),
-                ) { Text("Confirm") }
+                if (canAfford) {
+                    Button(
+                        onClick = {
+                            pendingItem = null
+                            scope.launch {
+                                val purchased = shopViewModel.purchaseAndApply(item, viewModel)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = ShopAccent),
+                    ) { Text("Confirm") }
+                } else {
+                    Button(
+                        onClick = {
+                            (context as? Activity)?.let { act ->
+                                viewModel.adManager.showRewardedAd(
+                                    activity = act,
+                                    onRewarded = { earned ->
+                                        scope.launch {
+                                            viewModel.coinRepository.addCoins(earned, "EARN_AD", "Power-up ad reward")
+                                        }
+                                    }
+                                )
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = ShopAccent),
+                    ) { Text("Watch Ad (+50 🪙)") }
+                }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { pendingItem = null }) { Text("Cancel") }

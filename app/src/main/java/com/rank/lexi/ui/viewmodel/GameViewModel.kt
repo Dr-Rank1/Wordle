@@ -48,6 +48,7 @@ class GameViewModel @Inject constructor(
     val soundManager: SoundManager,
     private val engine: GameEngine,
     val adManager: com.rank.lexi.ads.AdManager,
+    val coinRepository: com.rank.lexi.data.repository.CoinRepository,
 ) : ViewModel() {
 
     private val launchMode = savedStateHandle.get<String>("mode") ?: GameMode.DAILY.name

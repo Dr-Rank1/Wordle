@@ -41,6 +41,7 @@ fun GameOverSheet(
     onPlayAgain: () -> Unit,
     onShowAnalysis: () -> Unit = {},
     onShowScorecard: () -> Unit = {},
+    onWatchAd: (() -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     if (!state.showGameOverSheet || state.status == GameStatus.IN_PROGRESS) return
@@ -133,6 +134,20 @@ fun GameOverSheet(
                     shape = RoundedCornerShape(10.dp),
                 ) {
                     Text("Guesses")
+                }
+            }
+
+            if (onWatchAd != null) {
+                OutlinedButton(
+                    onClick = onWatchAd,
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                ) {
+                    Text(
+                        text = "📺 Watch Ad for +50 🪙",
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
 
