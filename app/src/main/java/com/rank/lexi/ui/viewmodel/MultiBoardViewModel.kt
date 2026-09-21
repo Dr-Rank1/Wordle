@@ -2,6 +2,7 @@ package com.rank.lexi.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rank.lexi.data.db.AchievementDao
 import com.rank.lexi.data.db.VaultDao
 import com.rank.lexi.data.db.VaultWordRecord
 import com.rank.lexi.data.repository.PlayerPreferences
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,6 +27,7 @@ class MultiBoardViewModel @Inject constructor(
     val playerPreferences: PlayerPreferences,
     private val vaultDao: VaultDao,
     private val questRepository: QuestRepository,
+    private val achievementDao: AchievementDao,
 ) : ViewModel() {
 
     private val _mode = MutableStateFlow(MultiBoardMode.DORDLE)
@@ -93,6 +96,20 @@ class MultiBoardViewModel @Inject constructor(
             mode = newState.mode.name,
             solveDurationSeconds = 0L,
         )
+        try {
+            val existing = achievementDao.getAchievement("MULTI_MASTER")
+            if (existing != null && !existing.unlocked) {
+                achievementDao.upsertAchievement(
+                    existing.copy(
+                        unlocked = true,
+                        currentProgress = 1,
+                        unlockedAt = LocalDate.now().toString(),
+                    )
+                )
+                playerPreferences.addXp(150)
+            }
+        } catch (_: Exception) {}
+
         newState.boards.forEach { board ->
             val existing = vaultDao.getWord(board.targetWord)
             vaultDao.upsert(

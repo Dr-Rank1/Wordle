@@ -206,5 +206,8 @@ private fun iconForName(name: String): ImageVector = when (name) {
     "Grade" -> Icons.Default.Grade
     "Lock" -> Icons.Default.Lock
     "People" -> Icons.Default.People
+    "Dashboard" -> Icons.Default.Dashboard
+    "Psychology" -> Icons.Default.Psychology
+    "Whatshot" -> Icons.Default.Whatshot
     else -> Icons.Default.Stars
 }

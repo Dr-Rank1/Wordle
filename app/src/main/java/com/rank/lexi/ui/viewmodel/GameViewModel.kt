@@ -621,9 +621,11 @@ class GameViewModel @Inject constructor(
 
             incrementAchievement("FIRST_WIN")
             if (attempts == 1) incrementAchievement("GENIUS_1")
+            if (attempts <= 2) incrementAchievement("FLAWLESS_SWEEP")
             if (attempts == 6) incrementAchievement("CLUTCH_6")
             if (durationSeconds < 45) incrementAchievement("SPEED_DEMON")
             if (s.hardMode) incrementAchievement("HARD_MODE_WIN")
+            if (s.targetWord.any { it in "QXZ" }) incrementAchievement("RARE_HUNTER")
 
             try {
                 val defInfo = DictionaryHelper.resolveDefinition(s.targetWord)

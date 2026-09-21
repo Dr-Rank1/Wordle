@@ -37,12 +37,21 @@ object ChallengeCodec {
         return "$PREFIX$hex"
     }
 
+    fun buildShareableLink(word: String, maxAttempts: Int = 6): String =
+        "https://lexiguess.app/c/${encode(word, maxAttempts)}"
+
     /**
-     * Decodes an encoded challenge code into [ChallengeData].
+     * Decodes an encoded challenge code or URL into [ChallengeData].
      * Returns null if the code format or checksum is invalid.
      */
-    fun decode(code: String): ChallengeData? {
-        val trimmed = code.trim().uppercase()
+    fun decode(rawInput: String): ChallengeData? {
+        var clean = rawInput.trim()
+        if (clean.contains("code=")) {
+            clean = clean.substringAfter("code=").substringBefore("&").substringBefore(" ")
+        } else if (clean.contains("/c/")) {
+            clean = clean.substringAfter("/c/").substringBefore("?").substringBefore("/").substringBefore(" ")
+        }
+        val trimmed = clean.trim().uppercase()
         val hex = if (trimmed.startsWith(PREFIX)) {
             trimmed.removePrefix(PREFIX)
         } else {

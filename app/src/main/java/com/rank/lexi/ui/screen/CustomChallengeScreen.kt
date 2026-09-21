@@ -230,15 +230,22 @@ fun CustomChallengeScreen(
 
                                     Button(
                                         onClick = {
-                                            val sendIntent = Intent().apply {
-                                                action = Intent.ACTION_SEND
-                                                putExtra(
-                                                    Intent.EXTRA_TEXT,
-                                                    "I challenged you to a secret word in LexiGuess!\nCan you solve it?\n\nCode: $code\nPaste this code in LexiGuess -> Custom Puzzle to play!",
-                                                )
-                                                type = "text/plain"
-                                            }
-                                            context.startActivity(Intent.createChooser(sendIntent, "Share Challenge"))
+                                            try {
+                                                val link = ChallengeCodec.buildShareableLink(secretWordInput.trim().uppercase(), maxAttempts)
+                                                val sendIntent = Intent().apply {
+                                                    action = Intent.ACTION_SEND
+                                                    putExtra(
+                                                        Intent.EXTRA_TEXT,
+                                                        "I challenged you to a secret word in LexiGuess!\nCan you solve it?\n\nPlay: $link\nOr paste code '$code' in LexiGuess -> Custom Puzzle!",
+                                                    )
+                                                    type = "text/plain"
+                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                }
+                                                val chooser = Intent.createChooser(sendIntent, "Share Challenge").apply {
+                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                }
+                                                context.startActivity(chooser)
+                                            } catch (_: Exception) {}
                                         },
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(10.dp),

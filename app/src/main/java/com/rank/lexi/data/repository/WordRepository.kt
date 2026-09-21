@@ -186,9 +186,6 @@ class WordRepository @Inject constructor(
     }
 
     private suspend fun seedAchievementsIfEmpty() {
-        val check = achievementDao.getAchievement("FIRST_WIN")
-        if (check != null) return
-
         val initial = listOf(
             AchievementRecord("FIRST_WIN", "First Triumph", "Win your first game in any mode", "Star", 0, 1),
             AchievementRecord("WIN_5", "Word Enthusiast", "Win 5 games", "EmojiEvents", 0, 5),
@@ -206,6 +203,9 @@ class WordRepository @Inject constructor(
             AchievementRecord("LEVEL_50", "Grandmaster of Words", "Complete all 50 Campaign stages", "Grade", 0, 50),
             AchievementRecord("HARD_MODE_WIN", "Steel Resolve", "Win a game with Hard Mode enabled", "Lock", 0, 1),
             AchievementRecord("DUEL_PLAYED", "Friendly Rivalry", "Play a Pass & Play 2-Player Duel", "People", 0, 1),
+            AchievementRecord("MULTI_MASTER", "Multi-Board Master", "Solve any Dordle or Quordle puzzle", "Dashboard", 0, 1),
+            AchievementRecord("RARE_HUNTER", "Cipher Breaker", "Solve a word containing Q, X, or Z", "Psychology", 0, 1),
+            AchievementRecord("FLAWLESS_SWEEP", "Deadeye", "Solve a puzzle in 2 guesses or fewer", "Whatshot", 0, 1),
         )
         achievementDao.insertInitialAchievements(initial)
     }
