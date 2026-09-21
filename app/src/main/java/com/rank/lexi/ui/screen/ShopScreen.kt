@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +26,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -175,7 +181,12 @@ private fun CoinBalanceHeader(coins: Int) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("💰", fontSize = 36.sp)
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Outlined.Storefront,
+                contentDescription = "Shop",
+                tint = CoinGold,
+                modifier = Modifier.size(42.dp),
+            )
             Spacer(Modifier.height(8.dp))
             AnimatedContent(
                 targetState = coins,
@@ -282,7 +293,7 @@ private fun ShopItemCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            // Emoji icon
+            // Item icon
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -291,7 +302,18 @@ private fun ShopItemCard(
                     .border(1.dp, ShopAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(item.emoji, fontSize = 24.sp)
+                val icon = when (item) {
+                    is ShopItem.ExtraGuess -> androidx.compose.material.icons.Icons.Outlined.AddCircleOutline
+                    is ShopItem.RevealLetter -> androidx.compose.material.icons.Icons.Outlined.Lightbulb
+                    is ShopItem.SkipWord -> androidx.compose.material.icons.Icons.Outlined.FastForward
+                    is ShopItem.StreakFreeze -> androidx.compose.material.icons.Icons.Outlined.Shield
+                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = item.displayName,
+                    tint = ShopAccent,
+                    modifier = Modifier.size(28.dp),
+                )
             }
 
             Column(modifier = Modifier.weight(1f)) {

@@ -16,12 +16,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
@@ -424,7 +428,18 @@ private fun PowerUpBar(
                 ),
             ) {
                 Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    Text(item.emoji, fontSize = androidx.compose.ui.unit.TextUnit(18f, androidx.compose.ui.unit.TextUnitType.Sp))
+                    val icon = when (item) {
+                        is ShopItem.ExtraGuess -> androidx.compose.material.icons.Icons.Outlined.AddCircleOutline
+                        is ShopItem.RevealLetter -> androidx.compose.material.icons.Icons.Outlined.Lightbulb
+                        is ShopItem.SkipWord -> androidx.compose.material.icons.Icons.Outlined.FastForward
+                        is ShopItem.StreakFreeze -> androidx.compose.material.icons.Icons.Outlined.Shield
+                    }
+                    androidx.compose.material3.Icon(
+                        imageVector = icon,
+                        contentDescription = item.displayName,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                         Text("🪙", fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp))
                         Spacer(Modifier.width(2.dp))
