@@ -3,6 +3,7 @@ package com.rank.lexi.ui.screen
 import android.app.Activity
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.animation.AnimatedVisibility
+import com.rank.lexi.ui.util.findActivity
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -107,14 +108,19 @@ fun GameScreen(
         focusRequester.requestFocus()
     }
 
-    val activity = androidx.compose.ui.platform.LocalContext.current as android.app.Activity
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context.findActivity()
     val onPlayAgainWithAd = {
-        viewModel.adManager.showInterstitialAd(activity) {
+        if (activity != null) {
+            viewModel.adManager.showInterstitialAd(activity) {
+                viewModel.playAgain()
+            }
+        } else {
             viewModel.playAgain()
         }
     }
     val onBackToHomeWithAd = {
-        if (state.status != GameStatus.IN_PROGRESS) {
+        if (state.status != GameStatus.IN_PROGRESS && activity != null) {
             viewModel.adManager.showInterstitialAd(activity) {
                 onBackToHome()
             }
@@ -416,14 +422,16 @@ fun GameScreen(
             onShowAnalysis = { viewModel.showAnalysis() },
             onShowScorecard = { viewModel.showScorecard() },
             onWatchAd = {
-                viewModel.adManager.showRewardedAd(
-                    activity = activity,
-                    onRewarded = { coinsEarned ->
-                        scope.launch {
-                            viewModel.coinRepository.addCoins(coinsEarned, "EARN_AD", "Watched Game Over rewarded ad")
+                activity?.let { act ->
+                    viewModel.adManager.showRewardedAd(
+                        activity = act,
+                        onRewarded = { coinsEarned ->
+                            scope.launch {
+                                viewModel.coinRepository.addCoins(coinsEarned, "EARN_AD", "Watched Game Over rewarded ad")
+                            }
                         }
-                    }
-                )
+                    )
+                }
             },
             onDismiss = { viewModel.dismissGameOverSheet() },
         )
@@ -444,6 +452,7 @@ private fun PowerUpBar(
     var pendingItem by remember { mutableStateOf<ShopItem?>(null) }
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context.findActivity()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -522,7 +531,7 @@ private fun PowerUpBar(
                 } else {
                     Button(
                         onClick = {
-                            (context as? Activity)?.let { act ->
+                            activity?.let { act ->
                                 viewModel.adManager.showRewardedAd(
                                     activity = act,
                                     onRewarded = { earned ->

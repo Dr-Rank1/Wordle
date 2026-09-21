@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -256,7 +257,11 @@ fun SettingsScreen(
                 onClick = { showTutorial = true },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Icon(Icons.Outlined.HelpOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(
+                    androidx.compose.material.icons.Icons.AutoMirrored.Outlined.HelpOutline,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
                 Spacer(Modifier.width(8.dp))
                 Text("How to play tutorial")
             }

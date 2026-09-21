@@ -35,6 +35,11 @@ class AdManager @Inject constructor(
         private const val APP_OPEN_AD_UNIT_ID = "ca-app-pub-3940256099942544/9257395921"
     }
 
+    // ─── AD STATE TRACKING ───────────────────────────────────────────────────
+    var isShowingFullscreenAd = false
+        private set
+    private var lastAdDismissedTimeMs: Long = 0L
+
     // ─── REWARDED & REWARDED INTERSTITIAL ADS ────────────────────────────────
     private var rewardedInterstitialAd: RewardedInterstitialAd? = null
     private var rewardedAd: RewardedAd? = null
@@ -107,6 +112,8 @@ class AdManager @Inject constructor(
                 override fun onAdDismissedFullScreenContent() {
                     rewardedInterstitialAd = null
                     _isAdReady.value = false
+                    isShowingFullscreenAd = false
+                    lastAdDismissedTimeMs = System.currentTimeMillis()
                     onAdClosed()
                     loadRewardedAd()
                 }
@@ -115,10 +122,13 @@ class AdManager @Inject constructor(
                     Log.w(TAG, "Rewarded interstitial failed to show: ${error.message}")
                     rewardedInterstitialAd = null
                     _isAdReady.value = false
+                    isShowingFullscreenAd = false
+                    lastAdDismissedTimeMs = System.currentTimeMillis()
                     onAdClosed()
                     loadRewardedAd()
                 }
             }
+            isShowingFullscreenAd = true
             rInter.show(activity) { rewardItem ->
                 val coins = rewardItem.amount.coerceAtLeast(50)
                 Log.d(TAG, "User earned reward from rewarded interstitial: $coins coins")
@@ -132,6 +142,8 @@ class AdManager @Inject constructor(
                 override fun onAdDismissedFullScreenContent() {
                     rewardedAd = null
                     _isAdReady.value = false
+                    isShowingFullscreenAd = false
+                    lastAdDismissedTimeMs = System.currentTimeMillis()
                     onAdClosed()
                     loadRewardedAd()
                 }
@@ -140,10 +152,13 @@ class AdManager @Inject constructor(
                     Log.w(TAG, "Rewarded ad failed to show: ${error.message}")
                     rewardedAd = null
                     _isAdReady.value = false
+                    isShowingFullscreenAd = false
+                    lastAdDismissedTimeMs = System.currentTimeMillis()
                     onAdClosed()
                     loadRewardedAd()
                 }
             }
+            isShowingFullscreenAd = true
             rAd.show(activity) { rewardItem ->
                 val coins = rewardItem.amount.coerceAtLeast(50)
                 Log.d(TAG, "User earned reward from rewarded ad: $coins coins")
@@ -200,6 +215,8 @@ class AdManager @Inject constructor(
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 interstitialAd = null
+                isShowingFullscreenAd = false
+                lastAdDismissedTimeMs = System.currentTimeMillis()
                 onAdClosed()
                 loadInterstitialAd()
             }
@@ -207,10 +224,13 @@ class AdManager @Inject constructor(
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
                 Log.w(TAG, "Interstitial ad failed to show: ${error.message}")
                 interstitialAd = null
+                isShowingFullscreenAd = false
+                lastAdDismissedTimeMs = System.currentTimeMillis()
                 onAdClosed()
                 loadInterstitialAd()
             }
         }
+        isShowingFullscreenAd = true
         ad.show(activity)
     }
 
@@ -257,7 +277,13 @@ class AdManager @Inject constructor(
 
     /** Shows the App Open ad if available. */
     fun showAppOpenAdIfAvailable(activity: Activity, onAdDismissed: () -> Unit = {}) {
-        if (isShowingAppOpenAd) {
+        if (isShowingFullscreenAd || isShowingAppOpenAd) {
+            onAdDismissed()
+            return
+        }
+
+        // Avoid immediately showing App Open ad if another ad was recently closed (< 15s)
+        if (System.currentTimeMillis() - lastAdDismissedTimeMs < 15_000L) {
             onAdDismissed()
             return
         }
@@ -272,6 +298,8 @@ class AdManager @Inject constructor(
             override fun onAdDismissedFullScreenContent() {
                 appOpenAd = null
                 isShowingAppOpenAd = false
+                isShowingFullscreenAd = false
+                lastAdDismissedTimeMs = System.currentTimeMillis()
                 onAdDismissed()
                 loadAppOpenAd()
             }
@@ -279,15 +307,19 @@ class AdManager @Inject constructor(
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
                 appOpenAd = null
                 isShowingAppOpenAd = false
+                isShowingFullscreenAd = false
+                lastAdDismissedTimeMs = System.currentTimeMillis()
                 onAdDismissed()
                 loadAppOpenAd()
             }
 
             override fun onAdShowedFullScreenContent() {
                 isShowingAppOpenAd = true
+                isShowingFullscreenAd = true
             }
         }
         isShowingAppOpenAd = true
+        isShowingFullscreenAd = true
         appOpenAd?.show(activity)
     }
 }

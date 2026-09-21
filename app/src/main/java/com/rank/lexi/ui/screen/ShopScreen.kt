@@ -65,6 +65,7 @@ import com.rank.lexi.ui.theme.CoinGold
 import com.rank.lexi.ui.theme.ShopAccent
 import com.rank.lexi.ui.viewmodel.ShopEvent
 import com.rank.lexi.ui.viewmodel.ShopViewModel
+import com.rank.lexi.ui.util.findActivity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -78,7 +79,9 @@ fun ShopScreen(
     val coins by viewModel.coinsFlow.collectAsState(initial = 0)
     val isAdReady by viewModel.isAdReady.collectAsState()
     val recentTransactions by viewModel.recentTransactions.collectAsState(initial = emptyList())
-    val activity = LocalContext.current as Activity
+    val streakFreezeCount by viewModel.streakFreezeCount.collectAsState(initial = 0)
+    val context = LocalContext.current
+    val activity = context.findActivity()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(viewModel.events) {
@@ -125,7 +128,7 @@ fun ShopScreen(
             item {
                 WatchAdCard(
                     isReady = isAdReady,
-                    onWatch = { viewModel.watchAd(activity) },
+                    onWatch = { activity?.let { viewModel.watchAd(it) } },
                 )
             }
 
@@ -142,6 +145,7 @@ fun ShopScreen(
                 ShopItemCard(
                     item = item,
                     currentCoins = coins,
+                    streakFreezeCount = streakFreezeCount,
                     onBuy = { viewModel.purchase(item) },
                 )
             }
@@ -273,6 +277,7 @@ private fun WatchAdCard(isReady: Boolean, onWatch: () -> Unit) {
 private fun ShopItemCard(
     item: ShopItem,
     currentCoins: Int,
+    streakFreezeCount: Int = 0,
     onBuy: () -> Unit,
 ) {
     val canAfford = currentCoins >= item.coinCost
@@ -312,11 +317,21 @@ private fun ShopItemCard(
             }
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.displayName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = item.displayName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (item is ShopItem.StreakFreeze && streakFreezeCount > 0) {
+                        Text(
+                            text = "($streakFreezeCount owned)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ShopAccent,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
                 Text(
                     text = item.description,
                     style = MaterialTheme.typography.bodySmall,

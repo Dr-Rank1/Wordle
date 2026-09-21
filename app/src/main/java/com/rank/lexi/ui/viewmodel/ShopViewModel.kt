@@ -33,6 +33,7 @@ class ShopViewModel @Inject constructor(
     val coinsFlow: Flow<Int> = coinRepository.coinsFlow
     val recentTransactions: Flow<List<CoinRecord>> = coinRepository.recentTransactionsFlow
     val isAdReady: StateFlow<Boolean> = adManager.isAdReady
+    val streakFreezeCount: Flow<Int> = playerPreferences.streakFreezesFlow
     val shopItems: List<ShopItem> = ShopItem.allItems
 
     private val _events = MutableSharedFlow<ShopEvent>(extraBufferCapacity = 1)
