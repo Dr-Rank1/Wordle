@@ -154,7 +154,7 @@ fun GameOverSheet(
                 ) {
                     Text(
                         text = when (state.gameMode) {
-                            GameMode.DAILY -> "Practice"
+                            GameMode.DAILY -> "Play Rush"
                             GameMode.LEVEL -> "Next"
                             else -> "Play again"
                         },

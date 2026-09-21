@@ -33,7 +33,7 @@ fun LexiGuessTheme(
     reducedMotion: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) {
+    val colorScheme = if (darkTheme || boardTheme.id != "EMERALD") {
         darkColorScheme(
             primary = boardTheme.correctColor,
             onPrimary = Color.White,

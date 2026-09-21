@@ -305,7 +305,7 @@ fun GameScreen(
                         .fillMaxWidth()
                         .verticalScroll(gridScrollState)
                         .padding(vertical = 4.dp),
-                    contentAlignment = Alignment.Center,
+                    contentAlignment = Alignment.TopCenter,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -331,7 +331,7 @@ fun GameScreen(
                                     Text(
                                         text = when (state.gameMode) {
                                             GameMode.LEVEL -> "Next"
-                                            GameMode.DAILY -> "Practice"
+                                            GameMode.DAILY -> "Play Rush"
                                             else -> "Play again"
                                         },
                                     )
@@ -357,6 +357,10 @@ fun GameScreen(
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
                 )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                com.rank.lexi.ui.composable.BannerAd()
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
 

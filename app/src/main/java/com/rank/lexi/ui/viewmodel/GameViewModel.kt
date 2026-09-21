@@ -374,7 +374,8 @@ class GameViewModel @Inject constructor(
     fun playAgain() {
         val s = _state.value
         when (s.gameMode) {
-            GameMode.DAILY, GameMode.CUSTOM -> startPracticeGame(s.wordLength)
+            GameMode.DAILY -> startTimedRush()
+            GameMode.CUSTOM -> startPracticeGame(s.wordLength)
             GameMode.TIMED_RUSH -> startTimedRush()
             GameMode.LEVEL -> {
                 val nextLevel = (s.campaignLevel ?: 1) + 1

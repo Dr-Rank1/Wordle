@@ -29,13 +29,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material3.Icon
+
 /**
  * Wordly-style large game mode card with full-bleed gradient background,
  * emoji icon badge, title, subtitle, and optional CTA chip.
  *
  * @param title Mode name displayed in bold white.
  * @param subtitle Secondary description text.
- * @param emoji Large emoji icon displayed top-right.
+ * @param icon Large icon displayed top-right.
  * @param gradientStart Start colour for the card gradient (darker).
  * @param gradientEnd End colour for the card gradient (lighter/brighter).
  * @param modifier Layout modifier.
@@ -46,7 +49,7 @@ import androidx.compose.ui.unit.sp
 fun GameModeCard(
     title: String,
     subtitle: String,
-    emoji: String,
+    icon: ImageVector,
     gradientStart: Color,
     gradientEnd: Color,
     modifier: Modifier = Modifier,
@@ -71,11 +74,14 @@ fun GameModeCard(
             }
             .padding(horizontal = 18.dp, vertical = 16.dp),
     ) {
-        // Emoji badge top-right
-        Text(
-            text = emoji,
-            fontSize = 36.sp,
-            modifier = Modifier.align(Alignment.TopEnd),
+        // Icon badge top-right
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.5f),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(36.dp)
         )
 
         Column(
@@ -119,7 +125,7 @@ fun GameModeCard(
 @Composable
 fun SmallActionTile(
     title: String,
-    emoji: String,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
@@ -135,7 +141,12 @@ fun SmallActionTile(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(emoji, fontSize = 26.sp)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,

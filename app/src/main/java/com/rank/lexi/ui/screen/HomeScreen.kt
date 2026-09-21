@@ -13,11 +13,24 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Spellcheck
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -131,11 +144,7 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(HomeGradientTop, HomeGradientBottom)
-                )
-            )
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -152,7 +161,7 @@ fun HomeScreen(
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 3.sp,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 TextButton(
                     onClick = { showStreakCalendar = true },
@@ -161,7 +170,7 @@ fun HomeScreen(
                     Text(
                         text = "Lv$currentLevel  ·  $currentStreak day streak",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
                     )
                 }
             }
@@ -169,7 +178,7 @@ fun HomeScreen(
                 // Coin balance badge
                 CoinBalanceBadge(coins = coins)
                 IconButton(onClick = { showHowToPlay = true }) {
-                    Icon(Icons.Outlined.HelpOutline, contentDescription = "How to play", tint = Color.White.copy(alpha = 0.8f))
+                    Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = "How to play", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
                 }
                 IconButton(onClick = onToggleTheme) {
                     Icon(
@@ -179,11 +188,11 @@ fun HomeScreen(
                             else -> Icons.Outlined.PhoneAndroid
                         },
                         contentDescription = "Cycle display theme",
-                        tint = Color.White.copy(alpha = 0.8f),
+                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                     )
                 }
                 IconButton(onClick = onNavigateToSettings) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = Color.White.copy(alpha = 0.8f))
+                    Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
                 }
             }
         }
@@ -192,7 +201,7 @@ fun HomeScreen(
         GameModeCard(
             title = "Daily Word",
             subtitle = dailySubtitle,
-            emoji = "📅",
+            icon = Icons.Outlined.CalendarMonth,
             gradientStart = CardDaily,
             gradientEnd = CardDailyLight,
             ctaLabel = dailyCta,
@@ -205,7 +214,7 @@ fun HomeScreen(
             GameModeCard(
                 title = "Campaign — Level $continueCampaignLevel",
                 subtitle = "Continue where you left off",
-                emoji = "🏁",
+                icon = Icons.Outlined.Flag,
                 gradientStart = CardCampaign,
                 gradientEnd = CardCampaignLight,
                 ctaLabel = "CONTINUE",
@@ -222,7 +231,7 @@ fun HomeScreen(
             GameModeCard(
                 title = "Rush",
                 subtitle = if (rushHighScore > 0) "Best: $rushHighScore" else "2 minutes",
-                emoji = "⚡",
+                icon = Icons.Outlined.Bolt,
                 gradientStart = CardRush,
                 gradientEnd = CardRushLight,
                 modifier = Modifier.weight(1f),
@@ -231,7 +240,7 @@ fun HomeScreen(
             GameModeCard(
                 title = "Campaign",
                 subtitle = "50 levels",
-                emoji = "🏆",
+                icon = Icons.Outlined.EmojiEvents,
                 gradientStart = CardCampaign,
                 gradientEnd = CardCampaignLight,
                 modifier = Modifier.weight(1f),
@@ -247,7 +256,7 @@ fun HomeScreen(
             GameModeCard(
                 title = "Multi",
                 subtitle = "2 or 4 words",
-                emoji = "🔲",
+                icon = Icons.Outlined.GridView,
                 gradientStart = CardMulti,
                 gradientEnd = CardMultiLight,
                 modifier = Modifier.weight(1f),
@@ -256,7 +265,7 @@ fun HomeScreen(
             GameModeCard(
                 title = "Practice",
                 subtitle = "4–7 letters",
-                emoji = "🔤",
+                icon = Icons.Outlined.Spellcheck,
                 gradientStart = CardPractice,
                 gradientEnd = CardPracticeLight,
                 modifier = Modifier.weight(1f),
@@ -268,7 +277,7 @@ fun HomeScreen(
         GameModeCard(
             title = "Challenge a Friend",
             subtitle = "Share your own secret word",
-            emoji = "🔗",
+            icon = Icons.Outlined.Link,
             gradientStart = CardChallenge,
             gradientEnd = CardChallengeLight,
             modifier = Modifier.fillMaxWidth(),
@@ -277,7 +286,7 @@ fun HomeScreen(
         GameModeCard(
             title = "Pass & Play",
             subtitle = "Two players, one phone",
-            emoji = "👥",
+            icon = Icons.Outlined.Group,
             gradientStart = CardPassPlay,
             gradientEnd = CardPassPlayLight,
             modifier = Modifier.fillMaxWidth(),
@@ -289,26 +298,30 @@ fun HomeScreen(
         Text(
             "MORE",
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
             letterSpacing = 2.sp,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            SmallActionTile("Vault", "📖", Modifier.weight(1f), onClick = onNavigateToVault)
-            SmallActionTile("Quests", "📋", Modifier.weight(1f), onClick = onNavigateToQuests)
-            SmallActionTile("Shop", "🛒", Modifier.weight(1f), onClick = onNavigateToShop)
+            SmallActionTile("Vault", Icons.Outlined.Book, Modifier.weight(1f), onClick = onNavigateToVault)
+            SmallActionTile("Quests", Icons.AutoMirrored.Outlined.Assignment, Modifier.weight(1f), onClick = onNavigateToQuests)
+            SmallActionTile("Shop", Icons.Outlined.Storefront, Modifier.weight(1f), onClick = onNavigateToShop)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            SmallActionTile("Look", "🎨", Modifier.weight(1f), onClick = onNavigateToCosmetics)
-            SmallActionTile("Stats", "📊", Modifier.weight(1f), onClick = onNavigateToStats)
-            SmallActionTile("Tutorial", "❓", Modifier.weight(1f), onClick = { showHowToPlay = true })
+            SmallActionTile("Look", Icons.Outlined.Palette, Modifier.weight(1f), onClick = onNavigateToCosmetics)
+            SmallActionTile("Stats", Icons.Outlined.BarChart, Modifier.weight(1f), onClick = onNavigateToStats)
+            SmallActionTile("Tutorial", Icons.AutoMirrored.Outlined.HelpOutline, Modifier.weight(1f), onClick = { showHowToPlay = true })
         }
 
+        Spacer(Modifier.height(8.dp))
+        
+        com.rank.lexi.ui.composable.BannerAd()
+        
         Spacer(Modifier.height(8.dp))
     }
 
