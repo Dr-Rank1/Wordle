@@ -28,8 +28,8 @@ android {
         applicationId = "com.rank.lexi"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -44,9 +44,9 @@ android {
         if (releaseStore.exists()) {
             create("release") {
                 storeFile = releaseStore
-                storePassword = localProperties["RELEASE_STORE_PASSWORD"].orEmpty()
+                storePassword = localProperties["RELEASE_STORE_PASSWORD"] ?: "lexiguess2026"
                 keyAlias = localProperties["RELEASE_KEY_ALIAS"] ?: "lexiguess"
-                keyPassword = localProperties["RELEASE_KEY_PASSWORD"].orEmpty()
+                keyPassword = localProperties["RELEASE_KEY_PASSWORD"] ?: "lexiguess2026"
             }
         }
     }
