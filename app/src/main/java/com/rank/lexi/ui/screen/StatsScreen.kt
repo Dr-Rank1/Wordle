@@ -34,13 +34,9 @@ fun StatsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Statistics") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            com.rank.lexi.ui.composable.LexiTopBar(
+                title = "Statistics",
+                onBack = onBack,
                 actions = {
                     if (!state.loading) {
                         IconButton(
@@ -65,7 +61,7 @@ fun StatsScreen(
         }
     ) { padding ->
         if (state.loading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
             return@Scaffold

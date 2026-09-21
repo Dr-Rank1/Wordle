@@ -11,6 +11,11 @@ class LexiGuessApp : Application() {
     @Inject
     lateinit var soundManager: SoundManager
 
+    override fun onCreate() {
+        super.onCreate()
+        com.google.android.gms.ads.MobileAds.initialize(this) {}
+    }
+
     override fun onTerminate() {
         soundManager.release()
         super.onTerminate()

@@ -218,10 +218,7 @@ private fun WatchAdCard(isReady: Boolean, onWatch: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isReady)
-                Color(0xFF1B5E20)
-            else
-                MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = Color(0xFF1B5E20),
         ),
     ) {
         Row(
@@ -233,9 +230,7 @@ private fun WatchAdCard(isReady: Boolean, onWatch: () -> Unit) {
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (isReady) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline
-                    ),
+                    .background(Color(0xFF2E7D32)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -250,17 +245,17 @@ private fun WatchAdCard(isReady: Boolean, onWatch: () -> Unit) {
                     text = "Watch a Short Ad",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isReady) Color.White else MaterialTheme.colorScheme.onSurface,
+                    color = Color.White,
                 )
                 Text(
-                    text = if (isReady) "+${ShopItem.COIN_REWARD_PER_AD} coins" else "Loading ad…",
+                    text = "+${ShopItem.COIN_REWARD_PER_AD} coins",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isReady) CoinGold else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = CoinGold,
                 )
             }
             Button(
                 onClick = onWatch,
-                enabled = isReady,
+                enabled = true,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = CoinGold,
                     contentColor = Color.Black,

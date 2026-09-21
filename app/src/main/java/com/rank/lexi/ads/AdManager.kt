@@ -67,7 +67,8 @@ class AdManager @Inject constructor(
     ) {
         val ad = rewardedAd
         if (ad == null) {
-            Log.w(TAG, "No rewarded ad available")
+            Log.w(TAG, "No rewarded ad available. Using fallback reward.")
+            onRewarded(50)
             onAdClosed()
             loadRewardedAd() // Try to reload
             return
