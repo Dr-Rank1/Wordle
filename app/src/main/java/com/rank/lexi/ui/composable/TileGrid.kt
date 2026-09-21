@@ -55,13 +55,13 @@ fun TileGrid(
     val tileSize: Dp = if (maxRows > 6) (baseTileSize * 0.88f) else baseTileSize
 
     val baseFontSize = when (wordLength) {
-        4 -> 26.sp
-        5 -> 22.sp
-        6 -> 19.sp
-        7 -> 16.sp
-        else -> 22.sp
+        4 -> 28.sp
+        5 -> 24.sp
+        6 -> 21.sp
+        7 -> 18.sp
+        else -> 24.sp
     }
-    val fontSize = if (maxRows > 6) (baseFontSize.value * 0.9f).sp else baseFontSize
+    val fontSize = if (maxRows > 6) (baseFontSize.value * 0.92f).sp else baseFontSize
 
     val tiltState = rememberDeviceTilt()
     val tiltEnabled = LocalTiltParallaxEnabled.current
@@ -288,7 +288,7 @@ private fun TileCell(
         else -> Color.Black.copy(alpha = 0.40f)
     }
 
-    val emptyWellBg = if (darkMode) Color(0xFF0C0E13).copy(alpha = 0.55f) else Color(0xFFE2E8F0).copy(alpha = 0.55f)
+    val emptyWellBg = if (darkMode) Color(0xFF0F172A).copy(alpha = 0.65f) else Color(0xFFF1F5F9).copy(alpha = 0.85f)
     val cellBgColor = if (isEmptySlot) emptyWellBg else bgColor
 
     val stateLabel = when {
@@ -401,6 +401,14 @@ private fun TileCell(
                 fontSize = fontSize,
                 fontWeight = FontWeight.Black,
                 color = textColor,
+                style = androidx.compose.ui.text.TextStyle(
+                    letterSpacing = 0.5.sp,
+                    shadow = if (isBackSide) androidx.compose.ui.graphics.Shadow(
+                        color = Color.Black.copy(alpha = 0.45f),
+                        offset = Offset(1f, 1f),
+                        blurRadius = 2f,
+                    ) else null,
+                ),
             )
         }
     }
@@ -422,7 +430,7 @@ private fun TileState.toTextColor(dark: Boolean, theme: BoardTheme): Color = whe
 }
 
 private fun TileState.toBorder(dark: Boolean, theme: BoardTheme): Color = when (this) {
-    TileState.EMPTY -> if (dark) theme.tileBorder else TileBorderEmpty
-    TileState.FILLED -> if (dark) theme.tileBorder else TileBorderFilled
+    TileState.EMPTY -> if (dark) Color(0xFF475569) else Color(0xFFCBD5E1)
+    TileState.FILLED -> if (dark) Color(0xFF94A3B8) else TileBorderFilled
     TileState.CORRECT, TileState.MISPLACED, TileState.ABSENT -> Color.Transparent
 }

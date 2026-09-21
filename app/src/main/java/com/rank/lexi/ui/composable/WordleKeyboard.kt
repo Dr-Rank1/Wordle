@@ -225,9 +225,18 @@ private fun LetterKey(
     ) {
         Text(
             text = char.toString(),
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Black,
             color = textColor,
+            style = androidx.compose.ui.text.TextStyle(
+                shadow = if (tileState == TileState.CORRECT || tileState == TileState.MISPLACED || tileState == TileState.ABSENT) {
+                    androidx.compose.ui.graphics.Shadow(
+                        color = Color.Black.copy(alpha = 0.35f),
+                        offset = Offset(0.5f, 0.5f),
+                        blurRadius = 1f,
+                    )
+                } else null,
+            ),
         )
     }
 }

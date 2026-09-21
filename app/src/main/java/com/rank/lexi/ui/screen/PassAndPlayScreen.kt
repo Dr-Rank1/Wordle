@@ -3,6 +3,8 @@ package com.rank.lexi.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -326,10 +328,26 @@ fun PassAndPlayScreen(
                             )
                         }
 
-                        TileGrid(
-                            state = activeState,
-                            onTileFlipSound = { ts, col -> soundManager?.playTileFlip(ts, col) },
-                        )
+                        val duelScrollP2 = rememberScrollState()
+                        LaunchedEffect(activeState.currentRow) {
+                            if (activeState.currentRow > 2) {
+                                duelScrollP2.animateScrollTo(duelScrollP2.maxValue)
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .verticalScroll(duelScrollP2)
+                                .padding(vertical = 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            TileGrid(
+                                state = activeState,
+                                onTileFlipSound = { ts, col -> soundManager?.playTileFlip(ts, col) },
+                            )
+                        }
 
                         WordleKeyboard(
                             keyStates = activeState.keyStates,
@@ -401,10 +419,26 @@ fun PassAndPlayScreen(
                             )
                         }
 
-                        TileGrid(
-                            state = activeState,
-                            onTileFlipSound = { ts, col -> soundManager?.playTileFlip(ts, col) },
-                        )
+                        val duelScrollP1 = rememberScrollState()
+                        LaunchedEffect(activeState.currentRow) {
+                            if (activeState.currentRow > 2) {
+                                duelScrollP1.animateScrollTo(duelScrollP1.maxValue)
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .verticalScroll(duelScrollP1)
+                                .padding(vertical = 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            TileGrid(
+                                state = activeState,
+                                onTileFlipSound = { ts, col -> soundManager?.playTileFlip(ts, col) },
+                            )
+                        }
 
                         WordleKeyboard(
                             keyStates = activeState.keyStates,

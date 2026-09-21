@@ -440,7 +440,7 @@ private fun MiniTile(
         TileState.CORRECT -> boardTheme.correctColor
         TileState.MISPLACED -> boardTheme.misplacedColor
         TileState.ABSENT -> boardTheme.absentColor
-        TileState.FILLED -> MaterialTheme.colorScheme.surface
+        TileState.FILLED -> MaterialTheme.colorScheme.surfaceVariant
         TileState.EMPTY -> MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
     }
 
@@ -476,8 +476,12 @@ private fun MiniTile(
                 }
             }
             .border(
-                width = 1.dp,
-                color = if (state == TileState.FILLED) boardTheme.tileBorder else boardTheme.tileBorder.copy(alpha = 0.4f),
+                width = 1.2.dp,
+                color = when (state) {
+                    TileState.FILLED -> boardTheme.tileBorder
+                    TileState.EMPTY -> MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)
+                    else -> Color.Transparent
+                },
                 shape = RoundedCornerShape(4.dp),
             ),
         contentAlignment = Alignment.Center,
@@ -486,8 +490,17 @@ private fun MiniTile(
             Text(
                 text = letter.toString(),
                 fontWeight = FontWeight.Black,
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 color = textColor,
+                style = androidx.compose.ui.text.TextStyle(
+                    shadow = if (state == TileState.CORRECT || state == TileState.MISPLACED || state == TileState.ABSENT) {
+                        androidx.compose.ui.graphics.Shadow(
+                            color = Color.Black.copy(alpha = 0.45f),
+                            offset = Offset(1f, 1f),
+                            blurRadius = 1.5f,
+                        )
+                    } else null,
+                ),
             )
         }
     }

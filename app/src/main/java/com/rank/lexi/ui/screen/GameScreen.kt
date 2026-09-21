@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -267,35 +269,54 @@ fun GameScreen(
                     }
                 }
 
-                TileGrid(
-                    state = state,
-                    onTileFlipSound = { ts, col -> viewModel.soundManager.playTileFlip(ts, col) },
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .padding(vertical = 8.dp),
-                )
+                val gridScrollState = rememberScrollState()
 
-                if (state.status != GameStatus.IN_PROGRESS && !state.showGameOverSheet) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.padding(vertical = 8.dp),
+                LaunchedEffect(state.currentRow) {
+                    if (state.currentRow > 2) {
+                        gridScrollState.animateScrollTo(gridScrollState.maxValue)
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(gridScrollState)
+                        .padding(vertical = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Button(
-                            onClick = { viewModel.playAgain() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
-                        ) {
-                            Text(
-                                text = when (state.gameMode) {
-                                    GameMode.LEVEL -> "Next"
-                                    GameMode.DAILY -> "Practice"
-                                    else -> "Play again"
-                                },
-                            )
+                        TileGrid(
+                            state = state,
+                            onTileFlipSound = { ts, col -> viewModel.soundManager.playTileFlip(ts, col) },
+                        )
+
+                        if (state.status != GameStatus.IN_PROGRESS && !state.showGameOverSheet) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.padding(vertical = 8.dp),
+                            ) {
+                                Button(
+                                    onClick = { viewModel.playAgain() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                ) {
+                                    Text(
+                                        text = when (state.gameMode) {
+                                            GameMode.LEVEL -> "Next"
+                                            GameMode.DAILY -> "Practice"
+                                            else -> "Play again"
+                                        },
+                                    )
+                                }
+                                ShareButton(state = state)
+                            }
                         }
-                        ShareButton(state = state)
                     }
                 }
 
