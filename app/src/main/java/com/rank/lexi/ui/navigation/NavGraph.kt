@@ -10,10 +10,12 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MilitaryTech
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,7 @@ import androidx.navigation.navDeepLink
 import com.rank.lexi.data.db.AchievementDao
 import com.rank.lexi.data.db.LevelDao
 import com.rank.lexi.data.db.VaultDao
+import com.rank.lexi.data.repository.CoinRepository
 import com.rank.lexi.data.repository.GameRepository
 import com.rank.lexi.data.repository.PlayerPreferences
 import com.rank.lexi.data.repository.WordRepository
@@ -47,21 +50,23 @@ import com.rank.lexi.ui.audio.SoundManager
 import com.rank.lexi.ui.screen.*
 import com.rank.lexi.ui.viewmodel.GameViewModel
 import com.rank.lexi.ui.viewmodel.MultiBoardViewModel
+import com.rank.lexi.ui.viewmodel.ShopViewModel
 import java.time.LocalDate
 
 object Routes {
     const val HOME = "home"
     const val GAME = GameRoutes.PATTERN
     const val LEVELS = "levels"
-    const val STATS = "stats"
-    const val BADGES = "badges"
-    const val SETTINGS = "settings"
-    const val VAULT = "vault"
     const val MULTI_BOARD = "multi_board"
     const val CHALLENGE = "challenge?code={code}"
     const val QUESTS = "quests"
     const val COSMETICS = "cosmetics"
     const val PASS_AND_PLAY = "pass_and_play"
+    const val SHOP = "shop"
+    const val STATS = "stats"
+    const val BADGES = "badges"
+    const val SETTINGS = "settings"
+    const val VAULT = "vault"
 }
 
 data class NavItem(
@@ -74,6 +79,7 @@ data class NavItem(
 private val NAV_ITEMS = listOf(
     NavItem(Routes.HOME, "Home", Icons.Filled.Home, Icons.Outlined.Home),
     NavItem(Routes.LEVELS, "Levels", Icons.Filled.Flag, Icons.Outlined.Flag),
+    NavItem(Routes.SHOP, "Shop", Icons.Filled.Storefront, Icons.Outlined.Storefront),
     NavItem(Routes.STATS, "Stats", Icons.Filled.BarChart, Icons.Outlined.BarChart),
     NavItem(Routes.BADGES, "Awards", Icons.Filled.MilitaryTech, Icons.Outlined.MilitaryTech),
 )
@@ -82,6 +88,7 @@ private val NAV_ITEMS = listOf(
 fun LexiGuessNavGraph(
     playerPreferences: PlayerPreferences,
     gameRepository: GameRepository,
+    coinRepository: CoinRepository,
     levelDao: LevelDao,
     vaultDao: VaultDao,
     achievementDao: AchievementDao,
@@ -100,6 +107,7 @@ fun LexiGuessNavGraph(
     val wonDatesList by gameRepository.wonDatesFlow.collectAsState(initial = emptyList())
     val dailyStatus by gameRepository.dailyStatusFlow.collectAsState(initial = DailyStatus.NOT_STARTED)
     val nextLevel by levelDao.getNextIncompleteLevel().collectAsState(initial = null)
+    val coins by coinRepository.coinsFlow.collectAsState(initial = 0)
     var bestStreak by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         wordRepository.initialize()
@@ -114,6 +122,7 @@ fun LexiGuessNavGraph(
     val showBottomBar = currentRoute in listOf(
         Routes.HOME,
         Routes.LEVELS,
+        Routes.SHOP,
         Routes.STATS,
         Routes.BADGES,
     )
@@ -204,6 +213,7 @@ fun LexiGuessNavGraph(
                     onNavigateToQuests = { navController.navigate(Routes.QUESTS) },
                     onNavigateToCosmetics = { navController.navigate(Routes.COSMETICS) },
                     onNavigateToPassAndPlay = { navController.navigate(Routes.PASS_AND_PLAY) },
+                    onNavigateToShop = { navController.navigate(Routes.SHOP) },
                     themePref = themePref,
                     darkMode = darkMode,
                     onToggleTheme = {
@@ -214,7 +224,12 @@ fun LexiGuessNavGraph(
                         }
                         onThemeChange(next)
                     },
+                    coins = coins,
                 )
+            }
+
+            composable(Routes.SHOP) {
+                ShopScreen(onBack = { navController.popBackStack() })
             }
 
             composable(Routes.LEVELS) {

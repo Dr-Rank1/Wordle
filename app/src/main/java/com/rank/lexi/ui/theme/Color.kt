@@ -184,3 +184,32 @@ fun resolveBoardThemeId(id: String): String = when (id) {
 fun boardThemeById(id: String): BoardTheme =
     ALL_BOARD_THEMES.find { it.id == resolveBoardThemeId(id) } ?: EmeraldTheme
 
+// ── Coin & Shop UI ─────────────────────────────────────────────────────────
+val CoinGold      = Color(0xFFFFCC00)
+val CoinGoldDark  = Color(0xFFC89C00)
+val ShopAccent    = Color(0xFF7C4DFF)
+
+// ── Home screen gradient ───────────────────────────────────────────────────
+val HomeGradientTop    = Color(0xFF1A1040)
+val HomeGradientMid    = Color(0xFF130E32)
+val HomeGradientBottom = Color(0xFF0D0A22)
+
+// ── Game mode card accent colours ─────────────────────────────────────────
+val CardDaily      = Color(0xFF0D47A1)  // deep blue
+val CardDailyLight = Color(0xFF1976D2)
+val CardRush       = Color(0xFFB71C1C)  // red
+val CardRushLight  = Color(0xFFD32F2F)
+val CardCampaign   = Color(0xFF1B5E20)  // forest green
+val CardCampaignLight = Color(0xFF388E3C)
+val CardMulti      = Color(0xFF4A148C)  // deep purple
+val CardMultiLight = Color(0xFF7B1FA2)
+val CardPractice   = Color(0xFF006064)  // teal
+val CardPracticeLight = Color(0xFF00838F)
+val CardChallenge  = Color(0xFFE65100)  // burnt orange
+val CardChallengeLight = Color(0xFFF4511E)
+val CardPassPlay   = Color(0xFF37474F)  // blue-grey
+val CardPassPlayLight  = Color(0xFF546E7A)
+val CardVault      = Color(0xFF4E342E)  // brown
+val CardVaultLight = Color(0xFF6D4C41)
+val CardShop       = Color(0xFF5E35B1)  // violet
+val CardShopLight  = Color(0xFF7E57C2)

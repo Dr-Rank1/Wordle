@@ -24,10 +24,14 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -55,17 +59,31 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.rank.lexi.data.repository.CoinRepository
 import com.rank.lexi.domain.model.GameMode
 import com.rank.lexi.domain.model.GameStatus
+import com.rank.lexi.domain.model.ShopItem
 import com.rank.lexi.ui.composable.BossHealthBar
 import com.rank.lexi.ui.composable.ConfettiParticleEngine
+import com.rank.lexi.ui.composable.CoinBalanceBadge
 import com.rank.lexi.ui.composable.GameOverSheet
 import com.rank.lexi.ui.composable.PostGameAnalysisDialog
 import com.rank.lexi.ui.composable.RpgScorecardDialog
 import com.rank.lexi.ui.composable.ShareButton
 import com.rank.lexi.ui.composable.TileGrid
 import com.rank.lexi.ui.composable.WordleKeyboard
+import com.rank.lexi.ui.theme.CoinGold
+import com.rank.lexi.ui.theme.ShopAccent
 import com.rank.lexi.ui.viewmodel.GameViewModel
+import com.rank.lexi.ui.viewmodel.ShopViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -320,6 +338,11 @@ fun GameScreen(
                     }
                 }
 
+                // ── Power-up bar ──────────────────────────────────────────────────
+                if (state.status == GameStatus.IN_PROGRESS) {
+                    PowerUpBar(viewModel = viewModel)
+                }
+
                 WordleKeyboard(
                     keyStates = state.keyStates,
                     onKey = viewModel::onKey,
@@ -367,6 +390,85 @@ fun GameScreen(
             onShowAnalysis = { viewModel.showAnalysis() },
             onShowScorecard = { viewModel.showScorecard() },
             onDismiss = { viewModel.dismissGameOverSheet() },
+        )
+    }
+}
+
+/**
+ * Horizontal row of power-up action buttons displayed above the keyboard during active play.
+ * Coin costs are shown on each button. Tapping a button shows a confirm dialog before spending.
+ */
+@Composable
+private fun PowerUpBar(
+    viewModel: GameViewModel,
+    shopViewModel: ShopViewModel = hiltViewModel(),
+) {
+    val coins by shopViewModel.coinsFlow.collectAsState(initial = 0)
+    val scope = rememberCoroutineScope()
+    var pendingItem by remember { mutableStateOf<ShopItem?>(null) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        listOf(ShopItem.RevealLetter, ShopItem.ExtraGuess, ShopItem.SkipWord).forEach { item ->
+            val canAfford = coins >= item.coinCost
+            OutlinedButton(
+                onClick = { pendingItem = item },
+                enabled = canAfford,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (canAfford) ShopAccent else androidx.compose.ui.graphics.Color.Gray,
+                ),
+            ) {
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Text(item.emoji, fontSize = androidx.compose.ui.unit.TextUnit(18f, androidx.compose.ui.unit.TextUnitType.Sp))
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Text("🪙", fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp))
+                        Spacer(Modifier.width(2.dp))
+                        Text(
+                            "${item.coinCost}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (canAfford) CoinGold else androidx.compose.ui.graphics.Color.Gray,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Confirm dialog
+    pendingItem?.let { item ->
+        AlertDialog(
+            onDismissRequest = { pendingItem = null },
+            title = { Text("Use ${item.displayName}?") },
+            text = {
+                Column {
+                    Text(item.description)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Cost: ${item.coinCost} 🪙  ·  You have $coins 🪙",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        pendingItem = null
+                        scope.launch {
+                            val purchased = shopViewModel.purchaseAndApply(item, viewModel)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ShopAccent),
+                ) { Text("Confirm") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { pendingItem = null }) { Text("Cancel") }
+            },
         )
     }
 }

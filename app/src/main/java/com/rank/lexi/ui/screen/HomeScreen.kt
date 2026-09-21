@@ -4,28 +4,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Assignment
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PhoneAndroid
-import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Style
-import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,16 +37,35 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rank.lexi.data.repository.PlayerPreferences
 import com.rank.lexi.domain.model.DailyStatus
-import com.rank.lexi.ui.composable.HowToPlayDialog
-import com.rank.lexi.ui.composable.LexiCard
-import com.rank.lexi.ui.composable.LexiSectionLabel
-import com.rank.lexi.ui.composable.ModeTile
-import com.rank.lexi.ui.composable.StreakCalendarDialog
 import com.rank.lexi.ui.audio.SoundManager
+import com.rank.lexi.ui.composable.CoinBalanceBadge
+import com.rank.lexi.ui.composable.GameModeCard
+import com.rank.lexi.ui.composable.HowToPlayDialog
+import com.rank.lexi.ui.composable.SmallActionTile
+import com.rank.lexi.ui.composable.StreakCalendarDialog
+import com.rank.lexi.ui.theme.CardCampaign
+import com.rank.lexi.ui.theme.CardCampaignLight
+import com.rank.lexi.ui.theme.CardChallenge
+import com.rank.lexi.ui.theme.CardChallengeLight
+import com.rank.lexi.ui.theme.CardDaily
+import com.rank.lexi.ui.theme.CardDailyLight
+import com.rank.lexi.ui.theme.CardMulti
+import com.rank.lexi.ui.theme.CardMultiLight
+import com.rank.lexi.ui.theme.CardPassPlay
+import com.rank.lexi.ui.theme.CardPassPlayLight
+import com.rank.lexi.ui.theme.CardPractice
+import com.rank.lexi.ui.theme.CardPracticeLight
+import com.rank.lexi.ui.theme.CardRush
+import com.rank.lexi.ui.theme.CardRushLight
+import com.rank.lexi.ui.theme.HomeGradientBottom
+import com.rank.lexi.ui.theme.HomeGradientTop
 import kotlinx.coroutines.launch
 
 @Composable
@@ -76,6 +87,7 @@ fun HomeScreen(
     onNavigateToQuests: () -> Unit = {},
     onNavigateToCosmetics: () -> Unit = {},
     onNavigateToPassAndPlay: () -> Unit = {},
+    onNavigateToShop: () -> Unit = {},
     wonDates: Set<String> = emptySet(),
     shieldDates: Set<String> = emptySet(),
     dailyStatus: DailyStatus = DailyStatus.NOT_STARTED,
@@ -84,6 +96,7 @@ fun HomeScreen(
     themePref: String = "SYSTEM",
     darkMode: Boolean = true,
     onToggleTheme: () -> Unit = {},
+    coins: Int = 0,
 ) {
     val xp by playerPreferences.xpFlow.collectAsState(initial = 0)
     val rushHighScore by playerPreferences.rushHighScoreFlow.collectAsState(initial = 0)
@@ -101,14 +114,33 @@ fun HomeScreen(
         if (!hasSeenHowToPlay) showHowToPlay = true
     }
 
+    // Daily card CTA label
+    val dailyCta = when (dailyStatus) {
+        DailyStatus.NOT_STARTED -> "PLAY"
+        DailyStatus.IN_PROGRESS -> "CONTINUE"
+        DailyStatus.WON -> "RESULT"
+        DailyStatus.LOST -> "REVEAL"
+    }
+    val dailySubtitle = when (dailyStatus) {
+        DailyStatus.NOT_STARTED -> "Same word for everyone · ${currentStreak}🔥 streak"
+        DailyStatus.IN_PROGRESS -> "Continue today's puzzle · ${currentStreak}🔥 streak"
+        DailyStatus.WON -> "You solved it! Share your result"
+        DailyStatus.LOST -> "See what today's word was"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(
+                Brush.verticalGradient(
+                    listOf(HomeGradientTop, HomeGradientBottom)
+                )
+            )
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        // ── Top bar ──────────────────────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -118,22 +150,26 @@ fun HomeScreen(
                 Text(
                     text = "LEXIGUESS",
                     style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
                     letterSpacing = 3.sp,
+                    color = Color.White,
                 )
                 TextButton(
                     onClick = { showStreakCalendar = true },
                     contentPadding = ButtonDefaults.TextButtonContentPadding,
                 ) {
                     Text(
-                        text = "Level $currentLevel  ·  $currentStreak day streak",
+                        text = "Lv$currentLevel  ·  $currentStreak day streak",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.65f),
                     )
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Coin balance badge
+                CoinBalanceBadge(coins = coins)
                 IconButton(onClick = { showHowToPlay = true }) {
-                    Icon(Icons.Outlined.HelpOutline, contentDescription = "How to play")
+                    Icon(Icons.Outlined.HelpOutline, contentDescription = "How to play", tint = Color.White.copy(alpha = 0.8f))
                 }
                 IconButton(onClick = onToggleTheme) {
                     Icon(
@@ -143,117 +179,140 @@ fun HomeScreen(
                             else -> Icons.Outlined.PhoneAndroid
                         },
                         contentDescription = "Cycle display theme",
+                        tint = Color.White.copy(alpha = 0.8f),
                     )
                 }
                 IconButton(onClick = onNavigateToSettings) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Settings")
+                    Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = Color.White.copy(alpha = 0.8f))
                 }
             }
         }
 
-        val dailyHeadline = when (dailyStatus) {
-            DailyStatus.NOT_STARTED -> "Play today’s puzzle"
-            DailyStatus.IN_PROGRESS -> "Continue today’s puzzle"
-            DailyStatus.WON -> "Solved — share your grid"
-            DailyStatus.LOST -> "See today’s word"
-        }
-        val dailyAction = when (dailyStatus) {
-            DailyStatus.NOT_STARTED -> "Play"
-            DailyStatus.IN_PROGRESS -> "Continue"
-            DailyStatus.WON -> "Result"
-            DailyStatus.LOST -> "Reveal"
-        }
-
-        LexiCard(
+        // ── Hero: Daily card ────────────────────────────────────────────────
+        GameModeCard(
+            title = "Daily Word",
+            subtitle = dailySubtitle,
+            emoji = "📅",
+            gradientStart = CardDaily,
+            gradientEnd = CardDailyLight,
+            ctaLabel = dailyCta,
             modifier = Modifier.fillMaxWidth(),
             onClick = onStartDaily,
-            contentDescription = dailyHeadline,
-        ) {
-            Text(
-                text = "DAILY",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(dailyHeadline, style = MaterialTheme.typography.headlineSmall)
-            Text(
-                text = "Same word for everyone. Generated on this device.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                Button(
-                    onClick = onStartDaily,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                ) {
-                    Text(dailyAction)
-                }
-            }
-        }
+        )
 
+        // Continue Campaign banner (only if in progress)
         if (continueCampaignLevel != null) {
-            LexiCard(
+            GameModeCard(
+                title = "Campaign — Level $continueCampaignLevel",
+                subtitle = "Continue where you left off",
+                emoji = "🏁",
+                gradientStart = CardCampaign,
+                gradientEnd = CardCampaignLight,
+                ctaLabel = "CONTINUE",
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onContinueCampaign(continueCampaignLevel) },
-                contentDescription = "Continue campaign, level $continueCampaignLevel",
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
-                        Text("Continue campaign", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            text = "Level $continueCampaignLevel",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Icon(
-                        Icons.Outlined.Flag,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+            )
         }
 
-        LexiSectionLabel("Play")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ModeTile("Rush", if (rushHighScore > 0) "Best $rushHighScore" else "Two minutes", Icons.Outlined.Timer, Modifier.weight(1f), onStartRush)
-            ModeTile("Campaign", "50 stages", Icons.Outlined.Flag, Modifier.weight(1f), onNavigateToLevels)
-        }
-        ModeTile("Practice", "4 to 7 letters", Icons.Outlined.Tune, Modifier.fillMaxWidth()) {
-            showLengthPicker = true
+        // ── Two-column: Rush | Campaign ──────────────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            GameModeCard(
+                title = "Rush",
+                subtitle = if (rushHighScore > 0) "Best: $rushHighScore" else "2 minutes",
+                emoji = "⚡",
+                gradientStart = CardRush,
+                gradientEnd = CardRushLight,
+                modifier = Modifier.weight(1f),
+                onClick = onStartRush,
+            )
+            GameModeCard(
+                title = "Campaign",
+                subtitle = "50 levels",
+                emoji = "🏆",
+                gradientStart = CardCampaign,
+                gradientEnd = CardCampaignLight,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToLevels,
+            )
         }
 
-        LexiSectionLabel("Together")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ModeTile("Multi-board", "Two or four words", Icons.Outlined.GridView, Modifier.weight(1f), onNavigateToMultiBoard)
-            ModeTile("Pass and play", "Two players, one phone", Icons.Outlined.People, Modifier.weight(1f), onNavigateToPassAndPlay)
+        // ── Two-column: Multi-board | Practice ───────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            GameModeCard(
+                title = "Multi",
+                subtitle = "2 or 4 words",
+                emoji = "🔲",
+                gradientStart = CardMulti,
+                gradientEnd = CardMultiLight,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToMultiBoard,
+            )
+            GameModeCard(
+                title = "Practice",
+                subtitle = "4–7 letters",
+                emoji = "🔤",
+                gradientStart = CardPractice,
+                gradientEnd = CardPracticeLight,
+                modifier = Modifier.weight(1f),
+                onClick = { showLengthPicker = true },
+            )
         }
-        ModeTile("Challenge", "Share a custom word", Icons.Outlined.QrCode, Modifier.fillMaxWidth(), onNavigateToChallenge)
 
-        LexiSectionLabel("More")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ModeTile("Vault", "Words you’ve found", Icons.AutoMirrored.Outlined.MenuBook, Modifier.weight(1f), onNavigateToVault)
-            ModeTile("Quests", "A few daily goals", Icons.AutoMirrored.Outlined.Assignment, Modifier.weight(1f), onNavigateToQuests)
+        // ── Full-width: Challenge | Pass & Play ──────────────────────────────
+        GameModeCard(
+            title = "Challenge a Friend",
+            subtitle = "Share your own secret word",
+            emoji = "🔗",
+            gradientStart = CardChallenge,
+            gradientEnd = CardChallengeLight,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onNavigateToChallenge,
+        )
+        GameModeCard(
+            title = "Pass & Play",
+            subtitle = "Two players, one phone",
+            emoji = "👥",
+            gradientStart = CardPassPlay,
+            gradientEnd = CardPassPlayLight,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onNavigateToPassAndPlay,
+        )
+
+        // ── Small action tiles grid (3 per row) ──────────────────────────────
+        Spacer(Modifier.height(2.dp))
+        Text(
+            "MORE",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.5f),
+            letterSpacing = 2.sp,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SmallActionTile("Vault", "📖", Modifier.weight(1f), onClick = onNavigateToVault)
+            SmallActionTile("Quests", "📋", Modifier.weight(1f), onClick = onNavigateToQuests)
+            SmallActionTile("Shop", "🛒", Modifier.weight(1f), onClick = onNavigateToShop)
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ModeTile("Look", "Colors and tiles", Icons.Outlined.Style, Modifier.weight(1f), onNavigateToCosmetics)
-            ModeTile("Stats", "Wins and streaks", Icons.Outlined.BarChart, Modifier.weight(1f), onNavigateToStats)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SmallActionTile("Look", "🎨", Modifier.weight(1f), onClick = onNavigateToCosmetics)
+            SmallActionTile("Stats", "📊", Modifier.weight(1f), onClick = onNavigateToStats)
+            SmallActionTile("Tutorial", "❓", Modifier.weight(1f), onClick = { showHowToPlay = true })
         }
-        ModeTile("Tutorial", "Interactive guide for new players", Icons.Outlined.HelpOutline, Modifier.fillMaxWidth()) {
-            showHowToPlay = true
-        }
+
+        Spacer(Modifier.height(8.dp))
     }
 
+    // ── Dialogs ──────────────────────────────────────────────────────────────
     if (showLengthPicker) {
         AlertDialog(
             onDismissRequest = { showLengthPicker = false },

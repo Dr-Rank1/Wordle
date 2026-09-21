@@ -6,10 +6,12 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.rank.lexi.data.db.AchievementDao
 import com.rank.lexi.data.db.AppDatabase
+import com.rank.lexi.data.db.CoinDao
 import com.rank.lexi.data.db.GameDao
 import com.rank.lexi.data.db.LevelDao
 import com.rank.lexi.data.db.QuestDao
 import com.rank.lexi.data.db.VaultDao
+import com.rank.lexi.data.repository.CoinRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -54,4 +56,11 @@ object DatabaseModule {
 
     @Provides
     fun provideQuestDao(database: AppDatabase): QuestDao = database.questDao()
+
+    @Provides
+    fun provideCoinDao(database: AppDatabase): CoinDao = database.coinDao()
+
+    @Provides
+    @Singleton
+    fun provideCoinRepository(coinDao: CoinDao): CoinRepository = CoinRepository(coinDao)
 }

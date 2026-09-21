@@ -415,6 +415,87 @@ class GameViewModel @Inject constructor(
         _state.update { it.copy(message = null) }
     }
 
+    // ── Power-ups (shop) ─────────────────────────────────────────────────────
+
+    /**
+     * Adds one extra guess row to the current live game board.
+     * Only allowed while the game is in progress and not already at max rows.
+     * @return `true` if the row was added successfully.
+     */
+    fun applyExtraGuess(): Boolean {
+        val s = _state.value
+        if (s.status != GameStatus.IN_PROGRESS) return false
+        val newMax = s.maxAttempts + 1
+        val newBoard = s.board.toMutableList().apply {
+            add(List(s.wordLength) { TileState.EMPTY })
+        }
+        val newLetters = s.boardLetters.toMutableList().apply {
+            add(List(s.wordLength) { ' ' })
+        }
+        _state.update { it.copy(maxAttempts = newMax, board = newBoard, boardLetters = newLetters) }
+        showMessage("+1 guess row added!")
+        return true
+    }
+
+    /**
+     * Reveals one unknown letter in the correct position on the board.
+     * Picks the first position that has not been correctly guessed yet.
+     * @return `true` if a letter was revealed.
+     */
+    fun applyRevealLetter(): Boolean {
+        val s = _state.value
+        if (s.status != GameStatus.IN_PROGRESS || s.targetWord.isBlank()) return false
+
+        // Find columns that haven't been revealed as CORRECT yet
+        val revealedCols = mutableSetOf<Int>()
+        for (row in 0 until s.currentRow) {
+            for (col in s.board[row].indices) {
+                if (s.board[row][col] == TileState.CORRECT) revealedCols.add(col)
+            }
+        }
+        val hiddenCols = s.targetWord.indices.filter { it !in revealedCols }
+        if (hiddenCols.isEmpty()) {
+            showMessage("All letters already revealed!")
+            return false
+        }
+
+        val col = hiddenCols.first()
+        val letter = s.targetWord[col]
+        showMessage("Letter ${col + 1} is '$letter' — revealed by power-up!")
+
+        // Update the key state so the keyboard highlights the letter green
+        val newKeyStates = s.keyStates.toMutableMap()
+        newKeyStates[letter] = TileState.CORRECT
+        _state.update { it.copy(keyStates = newKeyStates) }
+        return true
+    }
+
+    /**
+     * Replaces the current target word with a fresh random word, resets the board
+     * but preserves game mode, length, and other session context.
+     */
+    fun applySkipWord() {
+        val s = _state.value
+        if (s.status != GameStatus.IN_PROGRESS) return
+        viewModelScope.launch {
+            val newTarget = wordRepository.randomWord(s.wordLength)
+            _guessAnalysisSteps.value = emptyList()
+            _state.value = GameState(
+                gameMode = s.gameMode,
+                wordLength = s.wordLength,
+                maxAttempts = s.maxAttempts,
+                targetWord = newTarget,
+                hardMode = s.hardMode,
+                campaignLevel = s.campaignLevel,
+                isRushActive = s.isRushActive,
+                rushTimeRemainingSeconds = s.rushTimeRemainingSeconds,
+                rushWordsSolved = s.rushWordsSolved,
+                rushScore = s.rushScore,
+            )
+            showMessage("New word — you've got this!")
+        }
+    }
+
     private fun submitGuess() {
         val s = _state.value
         val guess = s.currentInput.uppercase()

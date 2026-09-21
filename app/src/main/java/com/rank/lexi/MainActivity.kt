@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
+import com.google.android.gms.ads.MobileAds
 import com.rank.lexi.data.db.AchievementDao
 import com.rank.lexi.data.db.LevelDao
 import com.rank.lexi.data.db.VaultDao
+import com.rank.lexi.data.repository.CoinRepository
 import com.rank.lexi.data.repository.GameRepository
 import com.rank.lexi.data.repository.PlayerPreferences
 import com.rank.lexi.data.repository.WordRepository
@@ -30,6 +32,9 @@ class MainActivity : ComponentActivity() {
     lateinit var gameRepository: GameRepository
 
     @Inject
+    lateinit var coinRepository: CoinRepository
+
+    @Inject
     lateinit var levelDao: LevelDao
 
     @Inject
@@ -50,6 +55,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        
+        MobileAds.initialize(this) {}
+
         setContent {
             val coroutineScope = rememberCoroutineScope()
             val themePref by playerPreferences.themeFlow.collectAsState(initial = "SYSTEM")
@@ -75,6 +83,7 @@ class MainActivity : ComponentActivity() {
                 LexiGuessNavGraph(
                     playerPreferences = playerPreferences,
                     gameRepository = gameRepository,
+                    coinRepository = coinRepository,
                     levelDao = levelDao,
                     vaultDao = vaultDao,
                     achievementDao = achievementDao,
@@ -93,3 +102,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
