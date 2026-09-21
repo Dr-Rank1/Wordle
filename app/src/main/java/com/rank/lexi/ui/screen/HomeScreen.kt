@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -141,14 +142,17 @@ fun HomeScreen(
         DailyStatus.LOST -> "See what today's word was"
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
         // ── Top bar ──────────────────────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -323,6 +327,7 @@ fun HomeScreen(
         com.rank.lexi.ui.composable.BannerAd()
         
         Spacer(Modifier.height(8.dp))
+    }
     }
 
     // ── Dialogs ──────────────────────────────────────────────────────────────

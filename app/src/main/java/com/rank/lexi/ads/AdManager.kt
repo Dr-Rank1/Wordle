@@ -23,6 +23,7 @@ class AdManager @Inject constructor(
     companion object {
         // Replace with real rewarded ad unit ID before production release
         private const val REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5354046379"
+        private const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
         private const val TAG = "AdManager"
     }
 
@@ -67,8 +68,8 @@ class AdManager @Inject constructor(
     ) {
         val ad = rewardedAd
         if (ad == null) {
-            Log.w(TAG, "No rewarded ad available. Using fallback reward.")
-            onRewarded(50)
+            Log.w(TAG, "No rewarded ad available.")
+            android.widget.Toast.makeText(activity, "Ad not ready yet. Trying to load...", android.widget.Toast.LENGTH_SHORT).show()
             onAdClosed()
             loadRewardedAd() // Try to reload
             return
@@ -96,5 +97,56 @@ class AdManager @Inject constructor(
             Log.d(TAG, "User earned reward: $coins coins")
             onRewarded(coins)
         }
+    }
+
+    private var interstitialAd: com.google.android.gms.ads.interstitial.InterstitialAd? = null
+
+    /** Pre-load the next interstitial ad. */
+    fun loadInterstitialAd() {
+        val adRequest = AdRequest.Builder().build()
+        com.google.android.gms.ads.interstitial.InterstitialAd.load(
+            context,
+            INTERSTITIAL_AD_UNIT_ID,
+            adRequest,
+            object : com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: com.google.android.gms.ads.interstitial.InterstitialAd) {
+                    Log.d(TAG, "Interstitial ad loaded")
+                    interstitialAd = ad
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    Log.w(TAG, "Interstitial ad failed to load: ${error.message}")
+                    interstitialAd = null
+                }
+            }
+        )
+    }
+
+    /** Show the loaded interstitial ad. */
+    fun showInterstitialAd(activity: Activity, onAdClosed: () -> Unit = {}) {
+        val ad = interstitialAd
+        if (ad == null) {
+            Log.w(TAG, "No interstitial ad available.")
+            onAdClosed()
+            loadInterstitialAd()
+            return
+        }
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                interstitialAd = null
+                onAdClosed()
+                loadInterstitialAd() // Pre-load next ad
+            }
+
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                Log.w(TAG, "Interstitial ad failed to show: ${error.message}")
+                interstitialAd = null
+                onAdClosed()
+                loadInterstitialAd()
+            }
+        }
+        
+        ad.show(activity)
     }
 }

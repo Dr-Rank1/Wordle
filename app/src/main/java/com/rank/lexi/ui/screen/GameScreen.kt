@@ -106,6 +106,13 @@ fun GameScreen(
         focusRequester.requestFocus()
     }
 
+    val activity = androidx.compose.ui.platform.LocalContext.current as android.app.Activity
+    val onPlayAgainWithAd = {
+        viewModel.adManager.showInterstitialAd(activity) {
+            viewModel.playAgain()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -188,7 +195,7 @@ fun GameScreen(
                                 }
                             }
                             if (viewModel.canRestartFromToolbar()) {
-                                IconButton(onClick = { viewModel.playAgain() }) {
+                                IconButton(onClick = onPlayAgainWithAd) {
                                     Icon(Icons.Outlined.Refresh, contentDescription = "Restart")
                                 }
                             }
@@ -209,7 +216,7 @@ fun GameScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
@@ -322,7 +329,7 @@ fun GameScreen(
                                 modifier = Modifier.padding(vertical = 8.dp),
                             ) {
                                 Button(
-                                    onClick = { viewModel.playAgain() },
+                                    onClick = onPlayAgainWithAd,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.primary,
                                         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -394,7 +401,7 @@ fun GameScreen(
 
         GameOverSheet(
             state = state,
-            onPlayAgain = { viewModel.playAgain() },
+            onPlayAgain = onPlayAgainWithAd,
             onShowAnalysis = { viewModel.showAnalysis() },
             onShowScorecard = { viewModel.showScorecard() },
             onDismiss = { viewModel.dismissGameOverSheet() },

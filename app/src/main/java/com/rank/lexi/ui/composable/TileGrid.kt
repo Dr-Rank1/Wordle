@@ -46,22 +46,31 @@ fun TileGrid(
 
     // Responsive tile size based on column count and row count
     val baseTileSize: Dp = when (wordLength) {
-        4 -> 60.dp
-        5 -> 54.dp
-        6 -> 46.dp
-        7 -> 40.dp
-        else -> 52.dp
+        4 -> 54.dp
+        5 -> 48.dp
+        6 -> 42.dp
+        7 -> 38.dp
+        else -> 46.dp
     }
-    val tileSize: Dp = if (maxRows > 6) (baseTileSize * 0.88f) else baseTileSize
+    
+    val tileSize: Dp = when {
+        maxRows >= 10 -> baseTileSize * 0.70f
+        maxRows > 6 -> baseTileSize * 0.85f
+        else -> baseTileSize
+    }
 
     val baseFontSize = when (wordLength) {
-        4 -> 28.sp
-        5 -> 24.sp
-        6 -> 21.sp
-        7 -> 18.sp
-        else -> 24.sp
+        4 -> 24.sp
+        5 -> 22.sp
+        6 -> 19.sp
+        7 -> 16.sp
+        else -> 22.sp
     }
-    val fontSize = if (maxRows > 6) (baseFontSize.value * 0.92f).sp else baseFontSize
+    val fontSize = when {
+        maxRows >= 10 -> (baseFontSize.value * 0.75f).sp
+        maxRows > 6 -> (baseFontSize.value * 0.90f).sp
+        else -> baseFontSize
+    }
 
     val tiltState = rememberDeviceTilt()
     val tiltEnabled = LocalTiltParallaxEnabled.current

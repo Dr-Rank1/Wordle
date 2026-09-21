@@ -52,9 +52,15 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var soundManager: SoundManager
 
+    @Inject
+    lateinit var adManager: com.rank.lexi.ads.AdManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        
+        adManager.loadRewardedAd()
+        adManager.loadInterstitialAd()
 
         setContent {
             val coroutineScope = rememberCoroutineScope()
