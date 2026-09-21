@@ -126,13 +126,25 @@ class MultiBoardEngine @Inject constructor(
             updatedKeyBoardStates[char] = newList
         }
 
+        val previouslySolved = state.boards.count { it.isSolved }
+        val currentlySolved = updatedBoards.count { it.isSolved }
+        val newlySolvedCount = (currentlySolved - previouslySolved).coerceAtLeast(0)
+
         val allSolved = updatedBoards.all { it.isSolved }
-        val ranOutOfAttempts = nextRow >= state.maxAttempts
+        val updatedBonus = state.bonusAttempts + if (!allSolved && newlySolvedCount > 0) newlySolvedCount else 0
+        val effectiveMaxAttempts = state.mode.maxAttempts + updatedBonus
+        val ranOutOfAttempts = nextRow >= effectiveMaxAttempts
 
         val newStatus = when {
             allSolved -> GameStatus.WON
             ranOutOfAttempts -> GameStatus.LOST
             else -> GameStatus.IN_PROGRESS
+        }
+
+        val finalMessage = when {
+            allSolved -> "Brilliant! All boards solved!"
+            ranOutOfAttempts -> "Out of attempts!"
+            else -> null
         }
 
         return state.copy(
@@ -142,8 +154,9 @@ class MultiBoardEngine @Inject constructor(
             status = newStatus,
             keyBoardStates = updatedKeyBoardStates,
             shake = false,
-            message = if (allSolved) "Brilliant! All boards solved!" else if (ranOutOfAttempts) "Out of attempts!" else null,
+            message = finalMessage,
             showConfetti = allSolved,
+            bonusAttempts = updatedBonus,
         )
     }
 

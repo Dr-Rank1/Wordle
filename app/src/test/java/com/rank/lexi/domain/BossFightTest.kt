@@ -73,4 +73,21 @@ class BossFightTest {
         assertEquals(CampaignSeeds.expectedWordLength(40), BossRegistry.getBossForLevel(40)!!.wordLength)
         assertEquals(CampaignSeeds.expectedWordLength(50), BossRegistry.getBossForLevel(50)!!.wordLength)
     }
+
+    @Test
+    fun `Level 40 The Chronomancer enforces banned letters hazard`() {
+        val boss = BossRegistry.getBossForLevel(40)
+        assertNotNull(boss)
+        assertTrue(boss!!.bannedLetters.contains('X'))
+        assertTrue(boss.bannedLetters.contains('Z'))
+
+        // "ZEBRAS" contains 'Z' -> Invalid
+        val err1 = BossRegistry.validateGuessForBoss("ZEBRAS", boss)
+        assertNotNull(err1)
+        assertTrue(err1!!.contains("forbidden"))
+
+        // "PLANET" does not contain banned letters -> Valid
+        val err2 = BossRegistry.validateGuessForBoss("PLANET", boss)
+        assertNull(err2)
+    }
 }

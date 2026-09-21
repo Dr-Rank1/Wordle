@@ -27,7 +27,8 @@ data class MultiBoardState(
     val shake: Boolean = false,
     val message: String? = null,
     val showConfetti: Boolean = false,
+    val bonusAttempts: Int = 0,
 ) {
-    val maxAttempts: Int get() = mode.maxAttempts
+    val maxAttempts: Int get() = mode.maxAttempts + bonusAttempts
     val solvedCount: Int get() = boards.count { it.isSolved }
 }

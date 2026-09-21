@@ -170,10 +170,14 @@ fun MultiBoardScreen(
                         color = TileCorrect,
                     )
                     Text(
-                        text = "Guess ${state.currentRow + 1} of ${state.maxAttempts}",
+                        text = if (state.bonusAttempts > 0) {
+                            "Guess ${state.currentRow + 1} of ${state.maxAttempts} (+${state.bonusAttempts})"
+                        } else {
+                            "Guess ${state.currentRow + 1} of ${state.maxAttempts}"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (state.bonusAttempts > 0) TileCorrect else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -206,39 +210,47 @@ fun MultiBoardScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            MiniBoard(
-                                board = state.boards[0],
-                                currentInput = state.currentInput,
-                                maxAttempts = state.maxAttempts,
-                                wordLength = state.wordLength,
-                                modifier = Modifier.weight(1f),
-                            )
-                            MiniBoard(
-                                board = state.boards[1],
-                                currentInput = state.currentInput,
-                                maxAttempts = state.maxAttempts,
-                                wordLength = state.wordLength,
-                                modifier = Modifier.weight(1f),
-                            )
+                            state.boards.getOrNull(0)?.let {
+                                MiniBoard(
+                                    board = it,
+                                    currentInput = state.currentInput,
+                                    maxAttempts = state.maxAttempts,
+                                    wordLength = state.wordLength,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            state.boards.getOrNull(1)?.let {
+                                MiniBoard(
+                                    board = it,
+                                    currentInput = state.currentInput,
+                                    maxAttempts = state.maxAttempts,
+                                    wordLength = state.wordLength,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            MiniBoard(
-                                board = state.boards[2],
-                                currentInput = state.currentInput,
-                                maxAttempts = state.maxAttempts,
-                                wordLength = state.wordLength,
-                                modifier = Modifier.weight(1f),
-                            )
-                            MiniBoard(
-                                board = state.boards[3],
-                                currentInput = state.currentInput,
-                                maxAttempts = state.maxAttempts,
-                                wordLength = state.wordLength,
-                                modifier = Modifier.weight(1f),
-                            )
+                            state.boards.getOrNull(2)?.let {
+                                MiniBoard(
+                                    board = it,
+                                    currentInput = state.currentInput,
+                                    maxAttempts = state.maxAttempts,
+                                    wordLength = state.wordLength,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            state.boards.getOrNull(3)?.let {
+                                MiniBoard(
+                                    board = it,
+                                    currentInput = state.currentInput,
+                                    maxAttempts = state.maxAttempts,
+                                    wordLength = state.wordLength,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
                         }
                     }
                 }

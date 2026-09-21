@@ -8,8 +8,8 @@ data class GameState(
     val wordLength: Int = 5,
     val maxAttempts: Int = MAX_ROWS,
     val targetWord: String = "",
-    val board: List<List<TileState>> = List(MAX_ROWS) { List(5) { TileState.EMPTY } },
-    val boardLetters: List<List<Char>> = List(MAX_ROWS) { List(5) { ' ' } },
+    val board: List<List<TileState>> = List(maxAttempts) { List(wordLength) { TileState.EMPTY } },
+    val boardLetters: List<List<Char>> = List(maxAttempts) { List(wordLength) { ' ' } },
     val keyStates: Map<Char, TileState> = ('A'..'Z').associateWith { TileState.EMPTY },
     val currentRow: Int = 0,
     val currentInput: String = "",
@@ -61,15 +61,21 @@ data class GameState(
         get() = gameMode == GameMode.PRACTICE || gameMode == GameMode.CUSTOM
 
     fun withCurrentInput(input: String): GameState {
-        val newLetters = boardLetters.map { it.toMutableList() }
-        val newTiles = board.map { it.toMutableList() }
+        val newLetters = boardLetters.map { it.toMutableList() }.toMutableList()
+        val newTiles = board.map { it.toMutableList() }.toMutableList()
         val row = currentRow
         if (row in newLetters.indices && row in newTiles.indices) {
+            val rowLetters = newLetters[row]
+            val rowTiles = newTiles[row]
+            while (rowLetters.size < wordLength) rowLetters.add(' ')
+            while (rowTiles.size < wordLength) rowTiles.add(TileState.EMPTY)
             for (i in 0 until wordLength) {
                 val filled = i < input.length
-                newLetters[row][i] = if (filled) input[i] else ' '
-                newTiles[row][i] = if (filled) TileState.FILLED else TileState.EMPTY
+                rowLetters[i] = if (filled) input[i] else ' '
+                rowTiles[i] = if (filled) TileState.FILLED else TileState.EMPTY
             }
+            newLetters[row] = rowLetters
+            newTiles[row] = rowTiles
         }
         return copy(
             currentInput = input,

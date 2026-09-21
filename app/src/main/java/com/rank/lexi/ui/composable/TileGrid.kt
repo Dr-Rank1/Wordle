@@ -83,8 +83,8 @@ fun TileGrid(
         for (row in 0 until maxRows) {
             TileRow(
                 row = row,
-                letters = state.boardLetters[row],
-                tileStates = state.board[row],
+                letters = state.boardLetters.getOrElse(row) { List(wordLength) { ' ' } },
+                tileStates = state.board.getOrElse(row) { List(wordLength) { TileState.EMPTY } },
                 wordLength = wordLength,
                 tileSize = tileSize,
                 fontSize = fontSize,

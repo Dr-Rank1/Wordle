@@ -50,4 +50,20 @@ class RpgGradeCalculatorTest {
         val luckScore = RpgGradeCalculator.calculateLuck(listOf(luckyStep), attempts = 2, won = true)
         assertTrue(luckScore >= 80)
     }
+
+    @Test
+    fun `calculateSkill handles zero previous candidates and NaN safely`() {
+        val zeroCandidatesStep = GuessStepAnalysis(
+            roundNumber = 1,
+            guessWord = "AUDIO",
+            rowStates = listOf(TileState.ABSENT, TileState.ABSENT, TileState.ABSENT, TileState.ABSENT, TileState.ABSENT),
+            remainingCandidates = 0,
+            previousCandidates = 0,
+        )
+        assertFalse(zeroCandidatesStep.eliminationPercentage.isNaN())
+        assertEquals(100f, zeroCandidatesStep.eliminationPercentage, 0.001f)
+
+        val skill = RpgGradeCalculator.calculateSkill(listOf(zeroCandidatesStep), won = true)
+        assertTrue(skill in 15..99)
+    }
 }

@@ -228,16 +228,7 @@ private fun LevelNode(
     val bossConfig = com.rank.lexi.domain.BossRegistry.getBossForLevel(record.levelNumber)
     val isBoss = bossConfig != null
 
-    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "bossPulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1.0f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            animation = androidx.compose.animation.core.tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
-        ),
-        label = "bossPulseAlpha",
-    )
+    val bossBorder = rememberBossBorder(isBoss = isBoss, isUnlocked = isUnlocked, completed = record.completed)
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -246,10 +237,7 @@ private fun LevelNode(
             isUnlocked -> if (isBoss) Color(0xFFE53935).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
             else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
         },
-        border = if (isBoss && isUnlocked) {
-            val borderAlpha = if (!record.completed) pulseAlpha else 0.8f
-            androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFE53935).copy(alpha = borderAlpha))
-        } else null,
+        border = bossBorder,
         modifier = modifier
             .aspectRatio(0.85f)
             .clickable(enabled = isUnlocked, onClick = onClick),
@@ -308,4 +296,29 @@ private fun LevelNode(
             }
         }
     }
+}
+
+@Composable
+private fun rememberBossBorder(
+    isBoss: Boolean,
+    isUnlocked: Boolean,
+    completed: Boolean,
+): androidx.compose.foundation.BorderStroke? {
+    if (!isBoss || !isUnlocked) return null
+    val borderAlpha = if (!completed) {
+        val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "bossPulse")
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 0.35f,
+            targetValue = 1.0f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                animation = androidx.compose.animation.core.tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+            ),
+            label = "bossPulseAlpha",
+        )
+        alpha
+    } else {
+        0.8f
+    }
+    return androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFE53935).copy(alpha = borderAlpha))
 }

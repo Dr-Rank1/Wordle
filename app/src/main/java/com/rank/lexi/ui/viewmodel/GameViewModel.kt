@@ -426,8 +426,15 @@ class GameViewModel @Inject constructor(
         val row = s.currentRow
         val len = s.wordLength
 
-        val newBoard = s.board.toMutableList().map { it.toMutableList() }
-        results.forEachIndexed { col, tileState -> newBoard[row][col] = tileState }
+        val newBoard = s.board.toMutableList().map { it.toMutableList() }.toMutableList()
+        while (newBoard.size <= row) {
+            newBoard.add(MutableList(len) { TileState.EMPTY })
+        }
+        val targetRow = newBoard[row]
+        while (targetRow.size < len) targetRow.add(TileState.EMPTY)
+        results.forEachIndexed { col, tileState ->
+            if (col < targetRow.size) targetRow[col] = tileState
+        }
 
         val newKeyStates = s.keyStates.toMutableMap()
         results.forEachIndexed { col, tileState ->
@@ -459,8 +466,8 @@ class GameViewModel @Inject constructor(
 
         val previousEvals = (0..row).map { r ->
             Pair(
-                if (r == row) guess else s.boardLetters[r].joinToString(""),
-                if (r == row) results else s.board[r],
+                if (r == row) guess else s.boardLetters.getOrNull(r)?.joinToString("") ?: "",
+                if (r == row) results else s.board.getOrNull(r) ?: emptyList(),
             )
         }
         val remaining = if (won) 1 else engine.countRemainingCandidates(previousEvals, len)
@@ -553,7 +560,7 @@ class GameViewModel @Inject constructor(
 
                 if (s.gameMode == GameMode.TIMED_RUSH && won) {
                     delay(1_400)
-                    advanceTimedRushWord()
+                    advanceTimedRushWord(nextRow)
                     return@launch
                 }
 
@@ -568,13 +575,20 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    private fun advanceTimedRushWord() {
+    private fun advanceTimedRushWord(attempts: Int = 4) {
         val s = _state.value
         val nextWord = wordRepository.randomWord(5)
         val newSolved = s.rushWordsSolved + 1
-        val scoreBonus = 200 + (s.rushTimeRemainingSeconds * 2)
+        val timeBounty = when {
+            attempts <= 3 -> 15
+            attempts == 4 -> 10
+            else -> 5
+        }
+        val comboMultiplier = (1.0f + (newSolved * 0.15f)).coerceAtMost(3.0f)
+        val baseScore = 200 + (s.rushTimeRemainingSeconds * 2)
+        val scoreBonus = (baseScore * comboMultiplier).toInt()
         val newScore = s.rushScore + scoreBonus
-        val newTime = (s.rushTimeRemainingSeconds + 15).coerceAtMost(180)
+        val newTime = (s.rushTimeRemainingSeconds + timeBounty).coerceAtMost(180)
 
         viewModelScope.launch {
             _state.value = createEmptyGameState(
@@ -586,7 +600,7 @@ class GameViewModel @Inject constructor(
                 rushTimeRemainingSeconds = newTime,
                 rushWordsSolved = newSolved,
                 rushScore = newScore,
-                message = "+15s! Score: $newScore",
+                message = "+${timeBounty}s! (x${"%.1f".format(java.util.Locale.US, comboMultiplier)}) +$scoreBonus",
                 hardMode = playerPreferences.hardModeFlow.first(),
             )
             playerPreferences.updateRushHighScore(newScore)
@@ -750,14 +764,26 @@ class GameViewModel @Inject constructor(
         guess: String,
         length: Int,
     ): List<List<Char>> {
-        val updated = existing.toMutableList().map { it.toMutableList() }
-        for (i in 0 until length) updated[row][i] = guess[i]
+        val updated = existing.toMutableList().map { it.toMutableList() }.toMutableList()
+        while (updated.size <= row) {
+            updated.add(MutableList(length) { ' ' })
+        }
+        val targetRow = updated[row].toMutableList()
+        while (targetRow.size < length) {
+            targetRow.add(' ')
+        }
+        for (i in 0 until minOf(length, guess.length)) {
+            if (i < targetRow.size) {
+                targetRow[i] = guess[i]
+            }
+        }
+        updated[row] = targetRow
         return updated
     }
 
     private fun buildStoredGuesses(state: GameState, lastGuess: String): String {
         val previous = (0 until state.currentRow).map { row ->
-            state.boardLetters[row].joinToString("")
+            state.boardLetters.getOrNull(row)?.joinToString("") ?: ""
         }
         val last = lastGuess.uppercase()
         return if (previous.lastOrNull() == last) previous.joinToString(",")
@@ -775,11 +801,19 @@ class GameViewModel @Inject constructor(
             hardMode = playerPreferences.hardModeFlow.first(),
         )
         for (guess in savedGuesses) {
+            if (tempState.currentRow >= tempState.maxAttempts) break
             if (guess.isBlank() || guess.length != 5) continue
             val results = engine.evaluate(guess, target)
             val row = tempState.currentRow
-            val newBoard = tempState.board.toMutableList().map { it.toMutableList() }
-            results.forEachIndexed { col, ts -> newBoard[row][col] = ts }
+            val newBoard = tempState.board.toMutableList().map { it.toMutableList() }.toMutableList()
+            while (newBoard.size <= row) {
+                newBoard.add(MutableList(5) { TileState.EMPTY })
+            }
+            results.forEachIndexed { col, ts ->
+                if (col < newBoard[row].size) {
+                    newBoard[row][col] = ts
+                }
+            }
 
             val newKeyStates = tempState.keyStates.toMutableMap()
             results.forEachIndexed { col, ts ->

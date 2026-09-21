@@ -11,6 +11,7 @@ data class BossConfig(
     val modifierDescription: String,
     val requireMinDistinctVowels: Int = 0,
     val enforceHardMode: Boolean = false,
+    val bannedLetters: Set<Char> = emptySet(),
 )
 
 object BossRegistry {
@@ -44,7 +45,8 @@ object BossRegistry {
             maxGuesses = 6,
             wordLength = 6,
             timeLimitSeconds = 60,
-            modifierDescription = "60-second time trial to solve before time shatters",
+            modifierDescription = "60-second time trial; 'X' and 'Z' forbidden in time flux",
+            bannedLetters = setOf('X', 'Z'),
         ),
         50 to BossConfig(
             levelNumber = 50,
@@ -64,6 +66,13 @@ object BossRegistry {
     fun isBossLevel(levelNumber: Int): Boolean = bosses.containsKey(levelNumber)
 
     fun validateGuessForBoss(guess: String, config: BossConfig): String? {
+        if (config.bannedLetters.isNotEmpty()) {
+            val upper = guess.uppercase()
+            val usedBanned = config.bannedLetters.filter { it in upper }
+            if (usedBanned.isNotEmpty()) {
+                return "Hazard: Letter(s) ${usedBanned.joinToString(", ")} are forbidden!"
+            }
+        }
         if (config.requireMinDistinctVowels > 0) {
             val vowels = setOf('A', 'E', 'I', 'O', 'U')
             val distinctVowelsCount = guess.uppercase().filter { it in vowels }.toSet().size

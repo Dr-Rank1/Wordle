@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -214,9 +215,15 @@ fun GameScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
-                                    text = "${state.rushWordsSolved} solved",
+                                    text = if (state.rushWordsSolved > 0) {
+                                        val combo = (1.0f + (state.rushWordsSolved * 0.15f)).coerceAtMost(3.0f)
+                                        "${state.rushWordsSolved} solved · x${"%.1f".format(java.util.Locale.US, combo)} Frenzy"
+                                    } else {
+                                        "${state.rushWordsSolved} solved"
+                                    },
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (state.rushWordsSolved >= 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = if (state.rushWordsSolved >= 3) FontWeight.Bold else FontWeight.Normal,
                                 )
                                 Text(
                                     text = "${state.rushScore}",
@@ -225,7 +232,10 @@ fun GameScreen(
                                 )
                             }
                             LinearProgressIndicator(
-                                progress = { (state.rushTimeRemainingSeconds.toFloat() / 120f).coerceIn(0f, 1f) },
+                                progress = {
+                                    val remaining = state.rushTimeRemainingSeconds.toFloat()
+                                    if (remaining.isNaN()) 0f else (remaining / 180f).coerceIn(0f, 1f)
+                                },
                                 modifier = Modifier.fillMaxWidth().height(4.dp),
                                 color = if (state.rushTimeRemainingSeconds < 25) {
                                     MaterialTheme.colorScheme.error

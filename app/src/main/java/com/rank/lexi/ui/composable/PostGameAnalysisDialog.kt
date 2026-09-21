@@ -26,8 +26,11 @@ data class GuessStepAnalysis(
     val previousCandidates: Int,
 ) {
     val eliminationPercentage: Float
-        get() = if (previousCandidates <= 1) 100f
-        else ((previousCandidates - remainingCandidates).toFloat() / previousCandidates * 100f).coerceIn(0f, 100f)
+        get() = if (previousCandidates <= 0) 100f
+        else {
+            val calc = (previousCandidates - remainingCandidates).toFloat() / previousCandidates * 100f
+            if (calc.isNaN()) 0f else calc.coerceIn(0f, 100f)
+        }
 }
 
 @Composable

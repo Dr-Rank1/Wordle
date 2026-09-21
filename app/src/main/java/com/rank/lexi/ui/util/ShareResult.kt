@@ -15,19 +15,37 @@ import java.io.File
 
 object ShareResult {
     fun share(context: Context, state: GameState) {
-        val text = buildShareText(state)
-        val bitmap = renderGrid(state)
-        val cacheDir = File(context.cacheDir, "share").apply { mkdirs() }
-        val file = File(cacheDir, "lexiguess-result.png")
-        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
-            putExtra(Intent.EXTRA_TEXT, text)
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        try {
+            val text = buildShareText(state)
+            val bitmap = renderGrid(state)
+            val cacheDir = File(context.cacheDir, "share").apply { mkdirs() }
+            val file = File(cacheDir, "lexiguess-result.png")
+            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_TEXT, text)
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooser = Intent.createChooser(intent, "Share your result").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooser)
+        } catch (_: Exception) {
+            try {
+                val text = buildShareText(state)
+                val textIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, text)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val chooser = Intent.createChooser(textIntent, "Share your result").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(chooser)
+            } catch (_: Exception) {}
         }
-        context.startActivity(Intent.createChooser(intent, "Share your result"))
     }
 
     fun buildShareText(state: GameState): String {
@@ -149,12 +167,18 @@ object ShareResult {
     }
 
     fun shareMultiBoard(context: Context, state: com.rank.lexi.domain.model.MultiBoardState) {
-        val text = buildMultiBoardShareText(state)
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)
-        }
-        context.startActivity(Intent.createChooser(intent, "Share your result"))
+        try {
+            val text = buildMultiBoardShareText(state)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = Intent.createChooser(intent, "Share your result").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooser)
+        } catch (_: Exception) {}
     }
 
     fun buildMultiBoardShareText(state: com.rank.lexi.domain.model.MultiBoardState): String {
@@ -179,8 +203,10 @@ object ShareResult {
                 sb.append(rowStr).append("\n")
             }
         } else {
+            val topBoards = listOfNotNull(state.boards.getOrNull(0), state.boards.getOrNull(1))
+            val botBoards = listOfNotNull(state.boards.getOrNull(2), state.boards.getOrNull(3))
             for (r in 0 until state.currentRow) {
-                val rowStr1 = listOf(state.boards[0], state.boards[1]).joinToString("  ") { board ->
+                val rowStr1 = topBoards.joinToString("  ") { board ->
                     if (r < board.rowStates.size) board.rowStates[r].joinToString("") { it.toEmoji() }
                     else "\u2B1B".repeat(state.wordLength)
                 }
@@ -188,7 +214,7 @@ object ShareResult {
             }
             sb.append("\n")
             for (r in 0 until state.currentRow) {
-                val rowStr2 = listOf(state.boards[2], state.boards[3]).joinToString("  ") { board ->
+                val rowStr2 = botBoards.joinToString("  ") { board ->
                     if (r < board.rowStates.size) board.rowStates[r].joinToString("") { it.toEmoji() }
                     else "\u2B1B".repeat(state.wordLength)
                 }
@@ -209,14 +235,20 @@ object ShareResult {
         p2TimeSeconds: Long,
         winnerText: String,
     ) {
-        val p1Result = if (p1Won) "$p1Attempts guesses (${p1TimeSeconds}s)" else "Failed"
-        val p2Result = if (p2Won) "$p2Attempts guesses (${p2TimeSeconds}s)" else "Failed"
-        val text = "⚔️ LexiGuess Pass and Play Duel\n\nPlayer 1: $p1Result\nPlayer 2: $p2Result\nOutcome: $winnerText\n\nlexiguess.app"
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)
-        }
-        context.startActivity(Intent.createChooser(intent, "Share duel result"))
+        try {
+            val p1Result = if (p1Won) "$p1Attempts guesses (${p1TimeSeconds}s)" else "Failed"
+            val p2Result = if (p2Won) "$p2Attempts guesses (${p2TimeSeconds}s)" else "Failed"
+            val text = "⚔️ LexiGuess Pass and Play Duel\n\nPlayer 1: $p1Result\nPlayer 2: $p2Result\nOutcome: $winnerText\n\nlexiguess.app"
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = Intent.createChooser(intent, "Share duel result").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooser)
+        } catch (_: Exception) {}
     }
 
     fun shareStats(
@@ -229,16 +261,22 @@ object ShareResult {
         currentStreak: Int,
         bestStreak: Int,
     ) {
-        val text = "📊 LexiGuess Career Stats\n\n" +
-                "Rank: $rankTitle (Level $level · $xp XP)\n" +
-                "Puzzles Played: $totalGames\n" +
-                "Win Rate: $winPercent%\n" +
-                "Current Streak: $currentStreak days (Best: $bestStreak)\n\n" +
-                "lexiguess.app"
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)
-        }
-        context.startActivity(Intent.createChooser(intent, "Share career stats"))
+        try {
+            val text = "📊 LexiGuess Career Stats\n\n" +
+                    "Rank: $rankTitle (Level $level · $xp XP)\n" +
+                    "Puzzles Played: $totalGames\n" +
+                    "Win Rate: $winPercent%\n" +
+                    "Current Streak: $currentStreak days (Best: $bestStreak)\n\n" +
+                    "lexiguess.app"
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = Intent.createChooser(intent, "Share career stats").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooser)
+        } catch (_: Exception) {}
     }
 }

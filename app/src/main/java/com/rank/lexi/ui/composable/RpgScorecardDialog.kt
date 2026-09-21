@@ -89,7 +89,10 @@ object RpgGradeCalculator {
 
     fun calculateSkill(steps: List<GuessStepAnalysis>, won: Boolean): Int {
         if (steps.isEmpty()) return if (won) 85 else 30
-        val avgPrune = steps.map { it.eliminationPercentage }.average()
+        val validSteps = steps.filter { !it.eliminationPercentage.isNaN() }
+        if (validSteps.isEmpty()) return if (won) 85 else 30
+        val avgPrune = validSteps.map { it.eliminationPercentage }.average()
+        if (avgPrune.isNaN()) return if (won) 85 else 30
         val baseScore = avgPrune.toInt()
         val bonus = if (won) 10 else -15
         return (baseScore + bonus).coerceIn(15, 99)
@@ -312,7 +315,7 @@ private fun ScorecardMeterRow(
             )
         }
         LinearProgressIndicator(
-            progress = { progress.coerceIn(0f, 1f) },
+            progress = { if (progress.isNaN()) 0f else progress.coerceIn(0f, 1f) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)

@@ -98,5 +98,25 @@ class MultiBoardEngineTest {
         assertNull(state.message)
         assertEquals(1, state.currentRow)
         assertTrue(state.boards[0].isSolved)
+        assertEquals(1, state.bonusAttempts)
+        assertEquals(MultiBoardMode.DORDLE.maxAttempts + 1, state.maxAttempts)
+    }
+
+    @Test
+    fun `solving a board awards bonus attempt`() {
+        var state = multiEngine.startNewGame(
+            mode = MultiBoardMode.DORDLE,
+            targetWords = listOf("CRANE", "SLOTH"),
+        )
+        assertEquals(0, state.bonusAttempts)
+        assertEquals(7, state.maxAttempts)
+
+        "CRANE".forEach { state = multiEngine.onLetterInput(state, it) }
+        state = multiEngine.submitGuess(state, setOf("CRANE", "SLOTH"))
+
+        assertTrue(state.boards[0].isSolved)
+        assertFalse(state.boards[1].isSolved)
+        assertEquals(1, state.bonusAttempts)
+        assertEquals(8, state.maxAttempts)
     }
 }
