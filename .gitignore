@@ -38,6 +38,7 @@ local.properties
 # Signing credentials & keystores
 *.keystore
 *.jks
+*.zip
 release.keystore
 secrets.properties
 
