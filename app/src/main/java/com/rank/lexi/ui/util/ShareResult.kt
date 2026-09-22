@@ -262,7 +262,7 @@ object ShareResult {
         bestStreak: Int,
     ) {
         try {
-            val text = "📊 LexiGuess Career Stats\n\n" +
+            val text = "LexiGuess Career Stats\n\n" +
                     "Rank: $rankTitle (Level $level · $xp XP)\n" +
                     "Puzzles Played: $totalGames\n" +
                     "Win Rate: $winPercent%\n" +
