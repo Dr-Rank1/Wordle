@@ -40,6 +40,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -144,62 +147,71 @@ fun HomeScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            text = "LEXIGUESS",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 2.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        TextButton(
+                            onClick = { showStreakCalendar = true },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.height(24.dp),
+                        ) {
+                            Text(
+                                text = "Lv$currentLevel  ·  $currentStreak day streak",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
+                            )
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Coin balance badge
+                        CoinBalanceBadge(coins = coins)
+                        IconButton(onClick = { showHowToPlay = true }) {
+                            Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = "How to play", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
+                        }
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(
+                                imageVector = when (themePref) {
+                                    "LIGHT" -> Icons.Outlined.LightMode
+                                    "DARK" -> Icons.Outlined.DarkMode
+                                    else -> Icons.Outlined.PhoneAndroid
+                                },
+                                contentDescription = "Cycle display theme",
+                                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                            )
+                        }
+                        IconButton(onClick = onNavigateToSettings) {
+                            Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
+                        }
+                    }
+                }
+            }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-        // ── Top bar ──────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text(
-                    text = "LEXIGUESS",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 3.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                TextButton(
-                    onClick = { showStreakCalendar = true },
-                    contentPadding = ButtonDefaults.TextButtonContentPadding,
-                ) {
-                    Text(
-                        text = "Lv$currentLevel  ·  $currentStreak day streak",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
-                    )
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Coin balance badge
-                CoinBalanceBadge(coins = coins)
-                IconButton(onClick = { showHowToPlay = true }) {
-                    Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = "How to play", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
-                }
-                IconButton(onClick = onToggleTheme) {
-                    Icon(
-                        imageVector = when (themePref) {
-                            "LIGHT" -> Icons.Outlined.LightMode
-                            "DARK" -> Icons.Outlined.DarkMode
-                            else -> Icons.Outlined.PhoneAndroid
-                        },
-                        contentDescription = "Cycle display theme",
-                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-                    )
-                }
-                IconButton(onClick = onNavigateToSettings) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
-                }
-            }
-        }
 
         // ── Hero: Daily card ────────────────────────────────────────────────
         GameModeCard(

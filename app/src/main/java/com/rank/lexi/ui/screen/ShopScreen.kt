@@ -114,7 +114,6 @@ fun ShopScreen(
         ) {
             // Coin balance header
             item {
-                Spacer(Modifier.height(8.dp))
                 CoinBalanceHeader(coins = coins)
             }
 

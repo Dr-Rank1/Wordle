@@ -82,7 +82,7 @@ fun AchievementsScreen(
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
                         text = "Unlock milestone badges across daily challenges, timed rush, campaign stages, and special deduction feats.",
