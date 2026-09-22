@@ -129,6 +129,7 @@ fun LexiGuessNavGraph(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         bottomBar = {
             AnimatedVisibility(
                 visible = showBottomBar,
@@ -180,7 +181,7 @@ fun LexiGuessNavGraph(
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
