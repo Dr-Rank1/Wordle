@@ -12,7 +12,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,9 +31,11 @@ class ShopViewModel @Inject constructor(
 
     val coinsFlow: Flow<Int> = coinRepository.coinsFlow
     val recentTransactions: Flow<List<CoinRecord>> = coinRepository.recentTransactionsFlow
-    val isAdReady: StateFlow<Boolean> = adManager.isAdReady
     val streakFreezeCount: Flow<Int> = playerPreferences.streakFreezesFlow
     val shopItems: List<ShopItem> = ShopItem.allItems
+
+    /** Combined readiness — either AdMob or Start.io rewarded ad available via AdManager. */
+    val isAnyRewardedReady: Flow<Boolean> = adManager.isAnyRewardedReady
 
     private val _events = MutableSharedFlow<ShopEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<ShopEvent> = _events.asSharedFlow()
@@ -43,20 +44,25 @@ class ShopViewModel @Inject constructor(
         adManager.loadRewardedAd()
     }
 
+    /**
+     * Show a rewarded ad (AdManager handles AdMob -> Start.io fallback).
+     */
     fun watchAd(activity: Activity) {
         adManager.showRewardedAd(
             activity = activity,
-            onRewarded = { coins ->
-                viewModelScope.launch {
-                    coinRepository.addCoins(
-                        amount = coins,
-                        type = "EARN_AD",
-                        description = "Watched rewarded ad",
-                    )
-                    _events.emit(ShopEvent.CoinsEarned)
-                }
-            },
+            onRewarded = { coins -> grantReward(coins) },
         )
+    }
+
+    private fun grantReward(coins: Int) {
+        viewModelScope.launch {
+            coinRepository.addCoins(
+                amount = coins,
+                type = "EARN_AD",
+                description = "Watched rewarded ad",
+            )
+            _events.emit(ShopEvent.CoinsEarned)
+        }
     }
 
     fun purchase(item: ShopItem) {

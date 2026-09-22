@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
-import com.google.android.gms.ads.MobileAds
 import com.rank.lexi.data.db.AchievementDao
 import com.rank.lexi.data.db.LevelDao
 import com.rank.lexi.data.db.VaultDao
@@ -59,6 +58,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         
+        // Pre-load Ads (AdManager handles AdMob + Start.io)
         adManager.loadRewardedAd()
         adManager.loadInterstitialAd()
         adManager.loadAppOpenAd()

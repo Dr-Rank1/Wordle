@@ -2,6 +2,7 @@ package com.rank.lexi
 
 import android.app.Application
 import com.rank.lexi.ui.audio.SoundManager
+import com.startapp.sdk.adsbase.StartAppSDK
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -13,12 +14,14 @@ class LexiGuessApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        val testDeviceIds = listOf("7F25E14F4DEF18B55074D4170E424E3A")
-        val configuration = com.google.android.gms.ads.RequestConfiguration.Builder()
-            .setTestDeviceIds(testDeviceIds)
-            .build()
-        com.google.android.gms.ads.MobileAds.setRequestConfiguration(configuration)
-        com.google.android.gms.ads.MobileAds.initialize(this) {}
+
+        // ── Start.io initialisation ──────────────────────────────────────────
+        @Suppress("DEPRECATION")
+        StartAppSDK.initParams(this, "208916292")
+            .setReturnAdsEnabled(true) // Acts as App Open ad
+            .init()
+        // Enable test ads during development — remove before production release
+        StartAppSDK.setTestAdsEnabled(true)
     }
 
     override fun onTerminate() {

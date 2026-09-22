@@ -66,6 +66,7 @@ import com.rank.lexi.ui.theme.ShopAccent
 import com.rank.lexi.ui.viewmodel.ShopEvent
 import com.rank.lexi.ui.viewmodel.ShopViewModel
 import com.rank.lexi.ui.util.findActivity
+import com.rank.lexi.ui.composable.BannerAd
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -77,7 +78,7 @@ fun ShopScreen(
     viewModel: ShopViewModel = hiltViewModel(),
 ) {
     val coins by viewModel.coinsFlow.collectAsState(initial = 0)
-    val isAdReady by viewModel.isAdReady.collectAsState()
+    val isAdReady by viewModel.isAnyRewardedReady.collectAsState(initial = false)
     val recentTransactions by viewModel.recentTransactions.collectAsState(initial = emptyList())
     val streakFreezeCount by viewModel.streakFreezeCount.collectAsState(initial = 0)
     val context = LocalContext.current
@@ -163,6 +164,12 @@ fun ShopScreen(
                 items(recentTransactions) { record ->
                     TransactionRow(record)
                 }
+            }
+
+            // Start.io banner ad
+            item {
+                Spacer(Modifier.height(8.dp))
+                BannerAd(modifier = Modifier.fillMaxWidth())
             }
 
             item { Spacer(Modifier.height(24.dp)) }

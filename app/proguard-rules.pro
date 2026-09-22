@@ -44,3 +44,8 @@
 -keepclassmembers class com.rank.lexi.ui.audio.SoundManager {
     public *;
 }
+
+# Start.io SDK
+-keep class com.startapp.** { *; }
+-dontwarn com.startapp.**
+-keepattributes Exceptions, InnerClasses, Signature, Deprecated, SourceFile, LineNumberTable, *Annotation*, EnclosingMethod

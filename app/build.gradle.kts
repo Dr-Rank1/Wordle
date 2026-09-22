@@ -137,8 +137,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
 
-    // AdMob
-    implementation("com.google.android.gms:play-services-ads:23.3.0")
+    // Start.io (formerly StartApp) — secondary ad network
+    // Pinned to 5.2.6: 5.3.x requires compileSdk 37 which AGP 8.5 does not support yet.
+    implementation("com.startapp:inapp-sdk:5.2.6")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
