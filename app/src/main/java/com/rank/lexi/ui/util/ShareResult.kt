@@ -161,7 +161,7 @@ object ShareResult {
             textSize = 11f
             color = 0xFF6B7280.toInt()
         }
-        canvas.drawText("lexiguess.app", width / 2f, height - 14f, footerPaint)
+        canvas.drawText("https://play.google.com/store/apps/details?id=com.rank.lexi", width / 2f, height - 14f, footerPaint)
 
         return bitmap
     }
@@ -221,7 +221,7 @@ object ShareResult {
                 sb.append(rowStr2).append("\n")
             }
         }
-        sb.append("\nlexiguess.app")
+        sb.append("\nhttps://play.google.com/store/apps/details?id=com.rank.lexi")
         return sb.toString()
     }
 
@@ -238,7 +238,7 @@ object ShareResult {
         try {
             val p1Result = if (p1Won) "$p1Attempts guesses (${p1TimeSeconds}s)" else "Failed"
             val p2Result = if (p2Won) "$p2Attempts guesses (${p2TimeSeconds}s)" else "Failed"
-            val text = "⚔️ LexiGuess Pass and Play Duel\n\nPlayer 1: $p1Result\nPlayer 2: $p2Result\nOutcome: $winnerText\n\nlexiguess.app"
+            val text = "⚔️ LexiGuess Pass and Play Duel\n\nPlayer 1: $p1Result\nPlayer 2: $p2Result\nOutcome: $winnerText\n\nhttps://play.google.com/store/apps/details?id=com.rank.lexi"
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, text)
@@ -262,12 +262,18 @@ object ShareResult {
         bestStreak: Int,
     ) {
         try {
-            val text = "LexiGuess Career Stats\n\n" +
-                    "Rank: $rankTitle (Level $level · $xp XP)\n" +
-                    "Puzzles Played: $totalGames\n" +
-                    "Win Rate: $winPercent%\n" +
-                    "Current Streak: $currentStreak days (Best: $bestStreak)\n\n" +
-                    "lexiguess.app"
+            val text = """
+                🏆 LexiGuess Career Profile 🏆
+                
+                🎖️ Rank: $rankTitle (Level $level)
+                🧠 Puzzles Solved: $totalGames
+                🎯 Win Rate: $winPercent%
+                🔥 Streak: $currentStreak (Best: $bestStreak)
+                ✨ XP: $xp
+                
+                Can you beat my stats? Download on Google Play:
+                https://play.google.com/store/apps/details?id=com.rank.lexi
+            """.trimIndent()
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, text)

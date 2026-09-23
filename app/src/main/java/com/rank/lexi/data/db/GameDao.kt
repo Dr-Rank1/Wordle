@@ -20,9 +20,15 @@ interface GameDao {
     @Query("SELECT COUNT(*) FROM game_records")
     suspend fun totalGames(): Int
 
+    @Query("SELECT COUNT(*) FROM game_records")
+    fun totalGamesFlow(): Flow<Int>
+
     /** Total games won. */
     @Query("SELECT COUNT(*) FROM game_records WHERE won = 1")
     suspend fun totalWins(): Int
+
+    @Query("SELECT COUNT(*) FROM game_records WHERE won = 1")
+    fun totalWinsFlow(): Flow<Int>
 
     /** Distinct dates won in Daily mode, sorted descending. */
     @Query("SELECT DISTINCT datePlayed FROM game_records WHERE won = 1 AND mode = 'DAILY' ORDER BY datePlayed DESC")
@@ -39,6 +45,11 @@ interface GameDao {
         "SELECT attempts, COUNT(*) as count FROM game_records WHERE won = 1 AND attempts BETWEEN 1 AND 6 AND mode = 'DAILY' GROUP BY attempts"
     )
     suspend fun guessDistribution(): List<GuessDistributionRow>
+
+    @Query(
+        "SELECT attempts, COUNT(*) as count FROM game_records WHERE won = 1 AND attempts BETWEEN 1 AND 6 AND mode = 'DAILY' GROUP BY attempts"
+    )
+    fun guessDistributionFlow(): Flow<List<GuessDistributionRow>>
 
     data class GuessDistributionRow(val attempts: Int, val count: Int)
 }

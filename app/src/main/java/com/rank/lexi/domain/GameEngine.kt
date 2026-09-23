@@ -191,9 +191,9 @@ class GameEngine(
     fun selectDailyWord(dateEpochDay: Long, length: Int = DEFAULT_WORD_LENGTH): String {
         val pool = multiLengthTargets[length] ?: (if (length == DEFAULT_WORD_LENGTH) targetWords else wordList)
         if (pool.isEmpty()) return "CRANE".take(length).padEnd(length, 'A')
-        val index = (dateEpochDay % pool.size).toInt().let {
-            if (it < 0) it + pool.size else it
-        }
+        // Scramble the date so daily words appear random rather than alphabetical
+        val scrambled = (dateEpochDay * 2654435761L) xor (dateEpochDay shl 13) xor (dateEpochDay shr 7)
+        val index = (kotlin.math.abs(scrambled) % pool.size).toInt()
         return pool[index].uppercase()
     }
 

@@ -325,6 +325,7 @@ fun LexiGuessNavGraph(
             composable(Routes.BADGES) {
                 AchievementsScreen(
                     achievementDao = achievementDao,
+                    coinRepository = coinRepository,
                     onBack = null,
                 )
             }

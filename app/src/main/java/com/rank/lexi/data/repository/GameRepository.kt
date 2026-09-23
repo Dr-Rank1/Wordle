@@ -113,8 +113,10 @@ class GameRepository @Inject constructor(
     fun allGames(): Flow<List<GameRecord>> = gameDao.getAllGames()
 
     suspend fun totalGames(): Int = gameDao.totalGames()
+    fun totalGamesFlow(): Flow<Int> = gameDao.totalGamesFlow()
 
     suspend fun totalWins(): Int = gameDao.totalWins()
+    fun totalWinsFlow(): Flow<Int> = gameDao.totalWinsFlow()
 
     suspend fun getWonDates(): List<String> = gameDao.getWonDates()
 
@@ -125,6 +127,12 @@ class GameRepository @Inject constructor(
             .mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() }
             .toSet()
     }
+
+    suspend fun guessDistribution(): Map<Int, Int> =
+        gameDao.guessDistribution().associate { it.attempts to it.count }
+
+    fun guessDistributionFlow(): Flow<Map<Int, Int>> =
+        gameDao.guessDistributionFlow().map { list -> list.associate { it.attempts to it.count } }
 
     suspend fun currentStreak(shieldDates: Collection<String> = emptySet()): Int {
         return computeCurrentStreak(gameDao.getWonDates(), shieldDates)
@@ -175,6 +183,26 @@ class GameRepository @Inject constructor(
             }
         }
         return maxStreak
+    }
+
+    val bestStreakFlow: Flow<Int> = combine(
+        gameDao.getWonDatesFlow(),
+        context.dataStore.data.map { it[PlayerPreferences.PreferencesKeys.USED_STREAK_SHIELDS] ?: emptySet() }
+    ) { wonDatesStr, shieldDatesStr ->
+        val wonDates = streakDates(wonDatesStr, shieldDatesStr).toList().sorted()
+        if (wonDates.isEmpty()) 0 else {
+            var maxStreak = 1
+            var current = 1
+            for (i in 1 until wonDates.size) {
+                if (wonDates[i] == wonDates[i - 1].plusDays(1)) {
+                    current++
+                    if (current > maxStreak) maxStreak = current
+                } else if (wonDates[i] != wonDates[i - 1]) {
+                    current = 1
+                }
+            }
+            maxStreak
+        }
     }
 
     suspend fun checkAndApplyStreakShield(playerPreferences: PlayerPreferences): Boolean {

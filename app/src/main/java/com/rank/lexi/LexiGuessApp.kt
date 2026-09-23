@@ -20,8 +20,6 @@ class LexiGuessApp : Application() {
         StartAppSDK.initParams(this, "208916292")
             .setReturnAdsEnabled(true) // Acts as App Open ad
             .init()
-        // Enable test ads during development — remove before production release
-        StartAppSDK.setTestAdsEnabled(true)
     }
 
     override fun onTerminate() {
