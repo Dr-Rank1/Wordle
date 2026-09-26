@@ -46,6 +46,7 @@ class GameViewModel @Inject constructor(
     private val vaultDao: VaultDao,
     private val questRepository: QuestRepository,
     val soundManager: SoundManager,
+    val hapticManager: com.rank.lexi.ui.util.HapticManager,
     private val engine: GameEngine,
     val adManager: com.rank.lexi.ads.AdManager,
     val coinRepository: com.rank.lexi.data.repository.CoinRepository,
@@ -629,6 +630,11 @@ class GameViewModel @Inject constructor(
 
             if (won) {
                 soundManager.playVictory()
+                viewModelScope.launch {
+                    if (playerPreferences.hapticsEnabledFlow.first()) {
+                        hapticManager.victoryPulse()
+                    }
+                }
                 _state.update { it.copy(showConfetti = true, winningRow = row) }
             }
 
@@ -944,6 +950,9 @@ class GameViewModel @Inject constructor(
     private fun triggerShake() {
         _state.update { it.copy(shake = true) }
         viewModelScope.launch {
+            if (playerPreferences.hapticsEnabledFlow.first()) {
+                hapticManager.errorBuzz()
+            }
             delay(400)
             _state.update { it.copy(shake = false) }
         }

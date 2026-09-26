@@ -128,5 +128,10 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         adManager.showAppOpenAdIfAvailable(this)
     }
+
+    override fun onDestroy() {
+        soundManager.release()
+        super.onDestroy()
+    }
 }
 

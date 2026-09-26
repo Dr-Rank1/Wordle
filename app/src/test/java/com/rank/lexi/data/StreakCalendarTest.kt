@@ -23,7 +23,11 @@ class StreakCalendarTest {
 
         override suspend fun totalGames(): Int = records.size
 
+        override fun totalGamesFlow(): Flow<Int> = flowOf(records.size)
+
         override suspend fun totalWins(): Int = records.count { it.won }
+
+        override fun totalWinsFlow(): Flow<Int> = flowOf(records.count { it.won })
 
         override suspend fun getWonDates(): List<String> =
             records.filter { it.won && it.mode == "DAILY" }.map { it.datePlayed }.distinct().sortedDescending()
@@ -35,6 +39,13 @@ class StreakCalendarTest {
             records.filter { it.won && it.attempts in 1..6 }
                 .groupBy { it.attempts }
                 .map { (att, list) -> GameDao.GuessDistributionRow(att, list.size) }
+
+        override fun guessDistributionFlow(): Flow<List<GameDao.GuessDistributionRow>> =
+            flowOf(
+                records.filter { it.won && it.attempts in 1..6 }
+                    .groupBy { it.attempts }
+                    .map { (att, list) -> GameDao.GuessDistributionRow(att, list.size) }
+            )
     }
 
     private fun computeCurrentStreak(wonDatesList: List<String>): Int {

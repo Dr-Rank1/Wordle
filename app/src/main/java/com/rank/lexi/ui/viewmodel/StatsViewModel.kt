@@ -38,8 +38,8 @@ class StatsViewModel @Inject constructor(
     val state: StateFlow<StatsUiState> = combine(
         gameRepository.totalGamesFlow(),
         gameRepository.totalWinsFlow(),
-        gameRepository.currentStreakFlow,
-        gameRepository.bestStreakFlow,
+        gameRepository.currentStreakFlow(playerPreferences.streakShieldDatesFlow),
+        gameRepository.bestStreakFlow(playerPreferences.streakShieldDatesFlow),
         gameRepository.guessDistributionFlow(),
         playerPreferences.xpFlow,
         playerPreferences.rushHighScoreFlow,

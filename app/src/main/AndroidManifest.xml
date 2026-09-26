@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Required by Start.io SDK for Android 12+ -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    <!-- Streak protection notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".LexiGuessApp"
@@ -50,6 +53,15 @@
         <meta-data
             android:name="com.startapp.sdk.APPLICATION_ID"
             android:value="208916292" />
+
+        <!-- Daily Streak Reminder Receiver -->
+        <receiver
+            android:name=".util.StreakReminderReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

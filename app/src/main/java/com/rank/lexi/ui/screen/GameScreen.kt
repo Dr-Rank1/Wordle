@@ -336,7 +336,12 @@ fun GameScreen(
                     ) {
                         TileGrid(
                             state = state,
-                            onTileFlipSound = { ts, col -> viewModel.soundManager.playTileFlip(ts, col) },
+                            onTileFlipSound = { ts, col ->
+                                viewModel.soundManager.playTileFlip(ts, col)
+                                if (hapticsEnabled) {
+                                    viewModel.hapticManager.tileFlipTick()
+                                }
+                            },
                         )
 
                         if (state.status != GameStatus.IN_PROGRESS && !state.showGameOverSheet) {

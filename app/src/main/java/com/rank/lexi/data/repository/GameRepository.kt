@@ -138,10 +138,7 @@ class GameRepository @Inject constructor(
         return computeCurrentStreak(gameDao.getWonDates(), shieldDates)
     }
 
-    val currentStreakFlow: Flow<Int> = combine(
-        gameDao.getWonDatesFlow(),
-        context.dataStore.data,
-    ) { dates, _ ->
+    val currentStreakFlow: Flow<Int> = gameDao.getWonDatesFlow().map { dates ->
         computeCurrentStreak(dates, emptySet())
     }
 
@@ -168,9 +165,20 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun bestStreak(shieldDates: Collection<String> = emptySet()): Int {
-        val wonDates = streakDates(gameDao.getWonDates(), shieldDates)
-            .toList()
-            .sorted()
+        return computeBestStreak(gameDao.getWonDates(), shieldDates)
+    }
+
+    val bestStreakFlow: Flow<Int> = gameDao.getWonDatesFlow().map { dates ->
+        computeBestStreak(dates, emptySet())
+    }
+
+    fun bestStreakFlow(shieldDates: Flow<Set<String>>): Flow<Int> =
+        combine(gameDao.getWonDatesFlow(), shieldDates) { dates, shields ->
+            computeBestStreak(dates, shields)
+        }
+
+    private fun computeBestStreak(wonDatesList: List<String>, shieldDates: Collection<String>): Int {
+        val wonDates = streakDates(wonDatesList, shieldDates).toList().sorted()
         if (wonDates.isEmpty()) return 0
         var maxStreak = 1
         var current = 1
@@ -183,26 +191,6 @@ class GameRepository @Inject constructor(
             }
         }
         return maxStreak
-    }
-
-    val bestStreakFlow: Flow<Int> = combine(
-        gameDao.getWonDatesFlow(),
-        context.dataStore.data.map { it[PlayerPreferences.PreferencesKeys.USED_STREAK_SHIELDS] ?: emptySet() }
-    ) { wonDatesStr, shieldDatesStr ->
-        val wonDates = streakDates(wonDatesStr, shieldDatesStr).toList().sorted()
-        if (wonDates.isEmpty()) 0 else {
-            var maxStreak = 1
-            var current = 1
-            for (i in 1 until wonDates.size) {
-                if (wonDates[i] == wonDates[i - 1].plusDays(1)) {
-                    current++
-                    if (current > maxStreak) maxStreak = current
-                } else if (wonDates[i] != wonDates[i - 1]) {
-                    current = 1
-                }
-            }
-            maxStreak
-        }
     }
 
     suspend fun checkAndApplyStreakShield(playerPreferences: PlayerPreferences): Boolean {
@@ -228,7 +216,4 @@ class GameRepository @Inject constructor(
         }
         return false
     }
-
-    suspend fun guessDistribution(): Map<Int, Int> =
-        gameDao.guessDistribution().associate { it.attempts to it.count }
 }
