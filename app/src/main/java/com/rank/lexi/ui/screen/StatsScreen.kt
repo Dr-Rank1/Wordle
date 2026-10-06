@@ -535,6 +535,9 @@ fun StatsScreen(
                     fontWeight = FontWeight.Bold,
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            com.rank.lexi.ui.composable.BannerAd()
         }
     }
 }

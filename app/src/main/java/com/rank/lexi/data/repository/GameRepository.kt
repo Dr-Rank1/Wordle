@@ -193,6 +193,26 @@ class GameRepository @Inject constructor(
         return maxStreak
     }
 
+    fun bestStreakFlow(shieldDates: Flow<Set<String>>): Flow<Int> = combine(
+        gameDao.getWonDatesFlow(),
+        shieldDates
+    ) { wonDatesStr, shieldDatesStr ->
+        val wonDates = streakDates(wonDatesStr, shieldDatesStr).toList().sorted()
+        if (wonDates.isEmpty()) 0 else {
+            var maxStreak = 1
+            var current = 1
+            for (i in 1 until wonDates.size) {
+                if (wonDates[i] == wonDates[i - 1].plusDays(1)) {
+                    current++
+                    if (current > maxStreak) maxStreak = current
+                } else if (wonDates[i] != wonDates[i - 1]) {
+                    current = 1
+                }
+            }
+            maxStreak
+        }
+    }
+
     suspend fun checkAndApplyStreakShield(playerPreferences: PlayerPreferences): Boolean {
         val shieldDates = playerPreferences.streakShieldDates()
         val wonDates = gameDao.getWonDates()
@@ -216,4 +236,5 @@ class GameRepository @Inject constructor(
         }
         return false
     }
+
 }

@@ -9,6 +9,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.startapp.sdk.ads.banner.Banner
 import com.startapp.sdk.ads.banner.BannerListener
 
+import com.startapp.sdk.ads.banner.Mrec
+
 /**
  * Compose-friendly Start.io banner ad.
  */
@@ -29,5 +31,28 @@ fun BannerAd(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .height(50.dp),
+    )
+}
+
+/**
+ * Compose-friendly Start.io Mrec (Medium Rectangle) ad (300x250).
+ */
+@Composable
+fun MrecAd(modifier: Modifier = Modifier) {
+    AndroidView(
+        factory = { context ->
+            Mrec(context).apply {
+                setBannerListener(object : BannerListener {
+                    override fun onReceiveAd(p0: android.view.View?) {}
+                    override fun onFailedToReceiveAd(p0: android.view.View?) {}
+                    override fun onImpression(p0: android.view.View?) {}
+                    override fun onClick(p0: android.view.View?) {}
+                })
+                loadAd()
+            }
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(250.dp),
     )
 }

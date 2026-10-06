@@ -113,7 +113,17 @@ class AdManager @Inject constructor(
         })
     }
 
+    private var interstitialCounter = 0
+    private val INTERSTITIAL_FREQ = 3
+
     fun showInterstitialAd(activity: Activity, onAdClosed: () -> Unit = {}) {
+        // Frequency cap: Only show every 3rd time to avoid annoyance
+        interstitialCounter++
+        if (interstitialCounter % INTERSTITIAL_FREQ != 0) {
+            onAdClosed()
+            return
+        }
+
         if (!_isInterstitialReady.value) {
             onAdClosed()
             loadInterstitialAd()
