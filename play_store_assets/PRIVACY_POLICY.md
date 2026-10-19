@@ -1,30 +1,29 @@
-# Privacy Policy for LexiGuess
+# Privacy Policy for NenoKisia
 
-**Last Updated**: September 15, 2026  
-**Application**: LexiGuess (`com.rank.lexi`)  
+**Last Updated**: October 19, 2026  
+**Application**: NenoKisia (`com.rank.lexi`)  
 **Developer**: Dr-Rank1  
 
-This Privacy Policy describes how LexiGuess ("we", "us", or "our") handles user information when you download, install, or play the LexiGuess mobile application.
+This Privacy Policy describes how NenoKisia ("we", "us", or "our") handles user information when you download, install, or play the NenoKisia mobile application.
 
 ---
 
 ## 1. Summary (Privacy-First Architecture)
 
-LexiGuess is designed from the ground up to be an **offline-first, privacy-respecting** game. 
-- We **do not** collect, store, or transmit any Personally Identifiable Information (PII).
-- We **do not** use tracking SDKs, advertising networks, or user behavioral analytics.
+NenoKisia is designed from the ground up to be an **offline-first, privacy-respecting** game. 
+- We **do not** sell or lease your personal information.
 - We **do not** require user registration, email addresses, or account logins.
+- Game progress, stats, and streaks stay directly on your device.
 
 ---
 
-## 2. Information We Do Not Collect
+## 2. Information We Do Not Collect Directly
 
-LexiGuess does **NOT** collect:
+NenoKisia does **NOT** collect:
 - Names, email addresses, phone numbers, or contact lists.
-- Precise or coarse geolocation data.
-- Advertising identifiers (GAID, IDFA).
-- Hardware identifiers (IMEI, MAC addresses).
-- Payment or financial details (the app is completely free with no in-app purchases).
+- Precise GPS geolocation data.
+- Personal biometric or health data.
+- Payment or financial account details.
 
 ---
 
@@ -42,32 +41,32 @@ All game progress and configurations are stored exclusively on your device using
 
 ## 4. Network and Internet Usage
 
-LexiGuess functions 100% offline using its pre-bundled 15,287-word lexicon. 
+NenoKisia functions 100% offline using its pre-bundled 15,287-word lexicon. 
 
 The Android `INTERNET` permission (`android.permission.INTERNET`) is utilized solely for:
 - **Optional Word Definitions**: If you choose to look up the dictionary definition of a solved word, the app queries the public Free Dictionary API. This request contains only the word itself (e.g., `api.dictionaryapi.dev/api/v2/entries/en/crane`). No cookies, user IDs, or device metadata are attached to these requests.
+- **Ad Delivery**: Loading privacy-compliant ads to support game development.
 
 ---
 
-## 5. Third-Party Services and Analytics
+## 5. Third-Party Services and Advertising
 
-LexiGuess contains **zero third-party tracking or advertising SDKs**:
-- No Google Firebase Analytics or Crashlytics
-- No Facebook / Meta SDK
-- No AdMob, Unity Ads, or third-party ad networks
-- No cross-app tracking cookies or fingerprinting
+NenoKisia uses Start.io as a third-party ad network to display non-intrusive advertisements (banners, rewarded video for in-game powerups, and capped interstitials). 
+- Start.io may process device technical data (such as IP address, approximate coarse location, and advertising ID) in accordance with its privacy policy to serve contextually relevant and family-safe ads.
+- You can review Start.io's Privacy Policy at: [https://www.start.io/policy/privacy-policy/](https://www.start.io/policy/privacy-policy/)
+- NenoKisia does not integrate invasive behavioral analytics trackers (no Facebook/Meta SDK, no invasive cross-app trackers).
 
 ---
 
 ## 6. Children's Privacy (COPPA & Family Policy Compliance)
 
-Because LexiGuess does not collect any personal information from any user, it fully complies with the **Children's Online Privacy Protection Act (COPPA)** and the **Google Play Families Policy**. Children of all ages can safely enjoy LexiGuess without data collection risks.
+NenoKisia is committed to family safety and complies with the **Children's Online Privacy Protection Act (COPPA)** and the **Google Play Families Policy**. Any ads displayed are configured for general audience and child-appropriate safety guidelines.
 
 ---
 
 ## 7. Security
 
-Your game data is protected by the standard Android application sandbox, ensuring that no other applications on your device can access LexiGuess's internal SQLite database or settings.
+Your game data is protected by the standard Android application sandbox, ensuring that no other applications on your device can access NenoKisia's internal SQLite database or settings.
 
 ---
 

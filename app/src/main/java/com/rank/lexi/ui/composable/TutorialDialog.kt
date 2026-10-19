@@ -188,7 +188,7 @@ private fun TutorialPageWelcome() {
         }
 
         Text(
-            text = "Welcome to LexiGuess",
+            text = "Welcome to NenoKisia",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
@@ -531,7 +531,7 @@ private fun TutorialPageGameModes() {
         )
 
         Text(
-            text = "LexiGuess offers multiple game modes to challenge your vocabulary:",
+            text = "NenoKisia offers multiple game modes to challenge your vocabulary:",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

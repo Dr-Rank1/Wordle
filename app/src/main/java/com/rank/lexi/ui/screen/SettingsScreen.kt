@@ -315,7 +315,7 @@ fun SettingsScreen(
                         )
                     }
                     Text(
-                        text = "Wordle is a registered trademark of The New York Times Company. LexiGuess is an independent game and is not affiliated with, sponsored by, authorized by, or endorsed by The New York Times Company.",
+                        text = "Wordle is a registered trademark of The New York Times Company. NenoKisia is an independent game and is not affiliated with, sponsored by, authorized by, or endorsed by The New York Times Company.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 18.sp,
@@ -383,7 +383,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "LexiGuess v${com.rank.lexi.BuildConfig.VERSION_NAME}",
+                text = "NenoKisia v${com.rank.lexi.BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.padding(bottom = 16.dp),

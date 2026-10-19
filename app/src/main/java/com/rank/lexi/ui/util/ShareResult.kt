@@ -59,7 +59,7 @@ object ShareResult {
             GameMode.DUEL -> "Duel"
             GameMode.CUSTOM -> "Custom"
         }
-        val header = "LexiGuess $modeName $attemptsLabel/${state.maxAttempts}$hardModeStar (${state.wordLength} Letters)"
+        val header = "NenoKisia $modeName $attemptsLabel/${state.maxAttempts}$hardModeStar (${state.wordLength} Letters)"
         val rows = (0 until state.currentRow).joinToString("\n") { row ->
             (0 until state.wordLength).joinToString("") { col ->
                 state.board[row].getOrElse(col) { TileState.EMPTY }.toEmoji()
@@ -182,7 +182,7 @@ object ShareResult {
     }
 
     fun buildMultiBoardShareText(state: com.rank.lexi.domain.model.MultiBoardState): String {
-        val title = if (state.mode == com.rank.lexi.domain.model.MultiBoardMode.DORDLE) "LexiGuess Two Boards" else "LexiGuess Four Boards"
+        val title = if (state.mode == com.rank.lexi.domain.model.MultiBoardMode.DORDLE) "NenoKisia Two Boards" else "NenoKisia Four Boards"
         val summary = state.boards.mapIndexed { idx, b ->
             val score = if (b.isSolved) "${b.solvedAtRow ?: b.guesses.size}" else "X"
             "#${idx + 1}: $score/${state.maxAttempts}"
@@ -238,7 +238,7 @@ object ShareResult {
         try {
             val p1Result = if (p1Won) "$p1Attempts guesses (${p1TimeSeconds}s)" else "Failed"
             val p2Result = if (p2Won) "$p2Attempts guesses (${p2TimeSeconds}s)" else "Failed"
-            val text = "⚔️ LexiGuess Pass and Play Duel\n\nPlayer 1: $p1Result\nPlayer 2: $p2Result\nOutcome: $winnerText\n\nhttps://play.google.com/store/apps/details?id=com.rank.lexi"
+            val text = "⚔️ NenoKisia Pass and Play Duel\n\nPlayer 1: $p1Result\nPlayer 2: $p2Result\nOutcome: $winnerText\n\nhttps://play.google.com/store/apps/details?id=com.rank.lexi"
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, text)
@@ -263,7 +263,7 @@ object ShareResult {
     ) {
         try {
             val text = """
-                🏆 LexiGuess Career Profile 🏆
+                🏆 NenoKisia Career Profile 🏆
                 
                 🎖️ Rank: $rankTitle (Level $level)
                 🧠 Puzzles Solved: $totalGames

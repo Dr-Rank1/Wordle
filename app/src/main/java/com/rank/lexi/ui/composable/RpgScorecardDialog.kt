@@ -247,16 +247,16 @@ fun RpgScorecardDialog(
                 Button(
                     onClick = {
                         val scorecardText = buildString {
-                            appendLine("LexiGuess")
+                            appendLine("NenoKisia")
                             appendLine("Word: $targetWord")
                             appendLine("Rank: ${rankInfo.rank} (${rankInfo.title})")
                             appendLine("Turns: $attempts / $maxAttempts")
                             appendLine("Skill: $skillScore/100 | Luck: $luckScore/100")
                             appendLine("Time: $durationText")
-                            appendLine("#LexiGuess")
+                            appendLine("#NenoKisia")
                         }
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("LexiGuess Scorecard", scorecardText)
+                        val clip = ClipData.newPlainText("NenoKisia Scorecard", scorecardText)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(context, "Scorecard copied to clipboard!", Toast.LENGTH_SHORT).show()
                     },

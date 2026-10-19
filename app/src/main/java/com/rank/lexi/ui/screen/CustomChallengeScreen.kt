@@ -236,7 +236,7 @@ fun CustomChallengeScreen(
                                                     action = Intent.ACTION_SEND
                                                     putExtra(
                                                         Intent.EXTRA_TEXT,
-                                                        "I challenged you to a secret word in LexiGuess!\nCan you solve it?\n\nPlay: $link\nOr paste code '$code' in LexiGuess -> Custom Puzzle!",
+                                                        "I challenged you to a secret word in NenoKisia!\nCan you solve it?\n\nPlay: $link\nOr paste code '$code' in NenoKisia -> Custom Puzzle!",
                                                     )
                                                     type = "text/plain"
                                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

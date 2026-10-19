@@ -119,7 +119,7 @@ object DictionaryHelper {
         val fallback = WordDefinition(
             word = word,
             partOfSpeech = "word",
-            definition = "A ${word.length}-letter word in the LexiGuess lexicon.",
+            definition = "A ${word.length}-letter word in the NenoKisia lexicon.",
             example = "You successfully deduced the word $word in today's challenge.",
         )
         runtimeCache[word] = fallback
